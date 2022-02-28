@@ -1,0 +1,9 @@
+POST https://accounts.townshiptale.com/connect/token HTTP/1.1
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=client_credentials
+&scope=ws.group%20ws.group_members%20ws.group_servers%20ws.group_bans%20ws.group_invites%20group.info%20group.join%20group.leave%20group.view%20group.members%20group.invite%20server.view%20server.console
+&client_id={{$processEnv ATT_CLIENT_ID}}
+&client_secret={{$processEnv ATT_CLIENT_SECRET_URIENCODED}}
+
+# SAVE OUTPUT TO ENV VAR 'ATT_API_ACCESSTOKEN'

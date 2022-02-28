@@ -1,0 +1,46 @@
+# RUN accounts.townshiptale.com.http first
+
+POST https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/servers/1174503463/console HTTP/1.1
+Content-Type: application/json
+x-api-key: 2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf
+User-Agent: {{$processEnv ATT_CLIENT_ID}}
+Authorization: Bearer {{token}}
+
+{"should_launch":"true","ignore_offline":"true"}
+
+#### EXPECTED RESPONSE
+#HTTP/1.1 200 OK
+#Content-Type: application/json; charset=utf-8
+#Content-Length: 531
+#Connection: close
+#Date: Sun, 27 Feb 2022 22:20:54 GMT
+#x-amzn-RequestId: cee7ebda-de3d-4356-a4e3-d87aa6bb02a0
+#x-amzn-Remapped-Content-Length: 531
+#X-Request-Id: |96a75779-47214ccc9f4a4fdd.
+#x-amz-apigw-id: OOPjEGuVywMF4TQ=
+#X-Amzn-Trace-Id: Root=1-621bf946-7a16f27c6a94b06d43e36874;Sampled=0
+#X-Cache: Miss from cloudfront
+#Via: 1.1 0ff8c2e3d89aee6e14cd41f6f240510a.cloudfront.net (CloudFront)
+#X-Amz-Cf-Pop: SEA19-C3
+#X-Amz-Cf-Id: kn5GOylhUlxXrufOBXvTDTU0zsJWJpEii1blRYMZAW95FGtJqlA8iQ==
+#
+#{
+#  "server_id": 1174503463,
+#  "allowed": true,
+#  "was_rejection": false,
+#  "cold_start": false,
+#  "fail_reason": "Nothing",
+#  "connection": {
+#    "server_id": 0,
+#    "address": "3.238.155.246",
+#    "local_address": "127.0.0.1",
+#    "pod_name": "att-quest-rcrdc-lxhxk",
+#    "game_port": 7681,
+#    "console_port": 7901,
+#    "logging_port": 7732,
+#    "websocket_port": 7878,
+#    "webserver_port": 7456
+#  },
+#  "token": "nope"
+#}
+####
