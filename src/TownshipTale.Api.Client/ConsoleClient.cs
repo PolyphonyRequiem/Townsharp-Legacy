@@ -8,7 +8,6 @@ namespace TownshipTale.Api.Client
     {
         private readonly uint consoleId;
         private readonly ClientWebSocket clientWebSocket;
-        private TaskCompletionSource<ConsoleCommandResult>? taskCompletionSource = default;
 
         private int sendingId = 0;
         private readonly byte[] messageBuffer = new byte[16777216];

@@ -3,61 +3,29 @@ using System.Text.Json;
 
 namespace TownshipTale.Api.Client
 {
-    public class ApiClient
+    public abstract class ApiClientBase
     {
         const string apiEndpoint = "https://967phuchye.execute-api.ap-southeast-2.amazonaws.com/prod/api/";
         private const string awsApiGatewayKey = "2l6aQGoNes8EHb94qMhqQ5m2iaiOM9666oDTPORf";
-        private readonly string clientId;
 
-        protected ApiClient(ClientCredential credential)
-        {
-            this.clientId =credential.ClientId;
-            this.TokenClient = new TokenClient(credential);
-            this.HttpClient = new HttpClient()
-            {
-                BaseAddress = new Uri(apiEndpoint)
-            };
+        protected ApiClientBase(ClientCredential credential)
+            : this(credential, new HttpClient())
+        {   
         }
+
+        protected ApiClientBase(ClientCredential credential, HttpClient httpClient)
+        {
+            this.ClientId = credential.ClientId;
+            this.TokenClient = new TokenClient(credential);
+            httpClient.BaseAddress = new Uri(apiEndpoint);
+            this.HttpClient = httpClient;
+        }
+
+        public string ClientId { get; }
 
         protected TokenClient TokenClient { get; }
-        protected HttpClient HttpClient { get;}
 
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <returns></returns>
-        /// <remarks>Ideal for containerized environments.</remarks>
-        public static Task<ApiClient> CreateAuthenticatedClientAsync(CancellationToken cancellationToken = default)
-        {
-            return CreateAuthenticatedClientAsync(ClientCredential.FromEnvironment(), cancellationToken);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="clientId"></param>
-        /// <param name="clientSecret"></param>
-        /// <returns></returns>
-        /// <remarks>Intended for console clients.</remarks>
-        public static Task<ApiClient> CreateAuthenticatedClientAsync(string clientId, string clientSecret, CancellationToken cancellationToken = default)
-        {
-            return CreateAuthenticatedClientAsync(new ClientCredential(clientId, clientSecret), cancellationToken);
-        }
-
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="credentials"></param>
-        /// <returns></returns>
-        /// <remarks>Intended to be used by dependency injection and factory scenarios.</remarks>
-        public static async Task<ApiClient> CreateAuthenticatedClientAsync(ClientCredential credentials, CancellationToken cancellationToken = default)
-        {
-            var client = new ApiClient(credentials);
-
-            await client.TokenClient.GetAuthorizationTokenAsync(cancellationToken);
-
-            return client;
-        }        
+        protected HttpClient HttpClient { get;}       
 
         public async Task<ConsoleClient> GetConsoleClientAsync (uint consoleId, CancellationToken cancellationToken = default)
         {
@@ -76,7 +44,7 @@ namespace TownshipTale.Api.Client
             var accessToken = await this.TokenClient.GetAuthorizationTokenAsync(cancellationToken);
                         
             requestMessage.Headers.Add("x-api-key", awsApiGatewayKey);
-            requestMessage.Headers.Add("User-Agent", this.clientId);
+            requestMessage.Headers.Add("User-Agent", this.ClientId);
             requestMessage.Headers.Add("Authorization", $"{accessToken.TokenType} {accessToken.Token}");
           
             HttpResponseMessage response = await this.HttpClient.SendAsync(requestMessage, cancellationToken: cancellationToken);
@@ -84,6 +52,10 @@ namespace TownshipTale.Api.Client
             if (response.IsSuccessStatusCode)
             {
                 JsonDocument consoleResponseJson = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync(cancellationToken), options: default, cancellationToken);
+
+                // TODO: This is not the right way to reuse this, or to log for that matter, shame on you if this goes into a Pull Request. - Firoso
+                Console.WriteLine(response.Content.ReadAsStringAsync());
+
 
                 var ipAddress = consoleResponseJson.RootElement.GetProperty("connection").GetProperty("address").GetString()!;
                 var websocketPort = consoleResponseJson.RootElement.GetProperty("connection").GetProperty("websocket_port").GetInt32();
