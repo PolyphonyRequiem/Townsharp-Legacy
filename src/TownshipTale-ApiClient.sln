@@ -3,11 +3,26 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.31912.275
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TownshipTale.Api.Client", "TownshipTale.Api.Client\TownshipTale.Api.Client.csproj", "{DE3EBB7E-2B83-4980-AA69-42695CCD1E02}"
-EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TownshipTale.Api.Core", "TownshipTale.Api.Core\TownshipTale.Api.Core.csproj", "{A45438E5-3B85-49DE-8F39-13F55FC7FFC0}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.TownshipTale.Api.Core", "Test.TownshipTale.Api.Core\Test.TownshipTale.Api.Core.csproj", "{6F03772A-436C-4C82-AE37-8DB74969432A}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "docs", "docs", "{557934AD-B270-46E6-90B6-DB1B616EFCB0}"
+	ProjectSection(SolutionItems) = preProject
+		..\docs\Township Tale API Notes.md = ..\docs\Township Tale API Notes.md
+	EndProjectSection
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TownshipTale.Api", "TownshipTale.Api\TownshipTale.Api.csproj", "{D2CCD120-C642-44FA-B9D0-AD6FACA6F846}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{2DE93603-00CE-4CF7-8E1A-D495551C84F6}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "libraries", "libraries", "{B98E5FC7-5F3B-427A-979D-B146398E1166}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "apps", "apps", "{2EFAFEAC-41B1-485C-95AE-E6F8C307CB3E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{7F36AC30-D5C3-4726-A060-AD3A265301CE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Township.ConsoleRepl", "Township.ConsoleRepl\Township.ConsoleRepl.csproj", "{8D654E44-3C31-469A-92C3-8587DCF5FD21}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,10 +30,6 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{DE3EBB7E-2B83-4980-AA69-42695CCD1E02}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{DE3EBB7E-2B83-4980-AA69-42695CCD1E02}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{DE3EBB7E-2B83-4980-AA69-42695CCD1E02}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{DE3EBB7E-2B83-4980-AA69-42695CCD1E02}.Release|Any CPU.Build.0 = Release|Any CPU
 		{A45438E5-3B85-49DE-8F39-13F55FC7FFC0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{A45438E5-3B85-49DE-8F39-13F55FC7FFC0}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A45438E5-3B85-49DE-8F39-13F55FC7FFC0}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -27,9 +38,23 @@ Global
 		{6F03772A-436C-4C82-AE37-8DB74969432A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{6F03772A-436C-4C82-AE37-8DB74969432A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{6F03772A-436C-4C82-AE37-8DB74969432A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D2CCD120-C642-44FA-B9D0-AD6FACA6F846}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D2CCD120-C642-44FA-B9D0-AD6FACA6F846}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D2CCD120-C642-44FA-B9D0-AD6FACA6F846}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D2CCD120-C642-44FA-B9D0-AD6FACA6F846}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8D654E44-3C31-469A-92C3-8587DCF5FD21}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D654E44-3C31-469A-92C3-8587DCF5FD21}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D654E44-3C31-469A-92C3-8587DCF5FD21}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D654E44-3C31-469A-92C3-8587DCF5FD21}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A45438E5-3B85-49DE-8F39-13F55FC7FFC0} = {B98E5FC7-5F3B-427A-979D-B146398E1166}
+		{6F03772A-436C-4C82-AE37-8DB74969432A} = {2DE93603-00CE-4CF7-8E1A-D495551C84F6}
+		{D2CCD120-C642-44FA-B9D0-AD6FACA6F846} = {B98E5FC7-5F3B-427A-979D-B146398E1166}
+		{8D654E44-3C31-469A-92C3-8587DCF5FD21} = {2EFAFEAC-41B1-485C-95AE-E6F8C307CB3E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C02D4807-D069-4868-AA91-ECF877998A5F}

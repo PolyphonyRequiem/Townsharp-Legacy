@@ -1,9 +1,6 @@
-﻿using System.Dynamic;
-using System.Net;
-using System.Net.Http.Headers;
-using System.Text.Json;
+﻿using System.Text.Json;
 
-namespace TownshipTale.Api.Client
+namespace TownshipTale.Api.Identity
 {
     public class TokenClient
     {
@@ -30,7 +27,7 @@ namespace TownshipTale.Api.Client
 
         protected HttpClient HttpClient { get; }
 
-        public async Task<AccessToken> GetAuthorizationTokenAsync(CancellationToken cancellationToken)
+        public async Task<AccessToken> GetAuthorizationTokenAsync(CancellationToken cancellationToken = default)
         {
             if (this.cachedAccessToken != default && !this.tokenIsStale)
             {
@@ -58,7 +55,7 @@ namespace TownshipTale.Api.Client
                 {
                     Token = tokenResponse.RootElement.GetProperty("access_token").GetString()!,
                     ExpiresIn = tokenResponse.RootElement.GetProperty("expires_in").GetInt32(),
-                    Scope = tokenResponse.RootElement.GetProperty("scope").GetString()?.Split(' ')!,
+                    Scope = tokenResponse.RootElement.GetProperty("scope").GetString()!,
                     TokenType = tokenResponse.RootElement.GetProperty("token_type").GetString()!,
                 };
 
