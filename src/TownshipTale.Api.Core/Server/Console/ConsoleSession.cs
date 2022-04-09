@@ -9,6 +9,7 @@ namespace TownshipTale.Api.Core.Server.Console
             this.Handler = commandHandler;
         }
 
+
         public ICommandHandler Handler { get; }
         
         public async Task<CommandResult> ExecuteCommandAsync(Command command, CancellationToken cancellationToken = default)

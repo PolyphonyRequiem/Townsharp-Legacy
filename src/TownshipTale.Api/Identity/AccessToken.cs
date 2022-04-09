@@ -11,5 +11,10 @@
         public bool Expired => DateTime.UtcNow > this.ExpiresAt;
 
         public static readonly AccessToken None = new AccessToken();
+
+        public override string ToString()
+        {
+            return $"{TokenType} {Token}";
+        }
     }
 }

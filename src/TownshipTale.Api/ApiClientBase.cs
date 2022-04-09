@@ -55,10 +55,12 @@ namespace TownshipTale.Api
             return uriBuilder.Uri;
         }
 
-        protected async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default )
+        protected async Task<HttpResponseMessage> SendRequestAsync(HttpRequestMessage requestMessage, CancellationToken cancellationToken = default)
         {
             this.EnsureAccessTokenIsValid(cancellationToken);
             requestMessage.Headers.Add("x-api-key", awsApiGatewayKey);
+            requestMessage.Headers.Add("Authorization", $"{this.accessToken}");
+
             return await this.HttpClient.SendAsync(requestMessage, cancellationToken);
         }
 
