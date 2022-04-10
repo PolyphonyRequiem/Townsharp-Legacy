@@ -1,4 +1,4 @@
-﻿namespace TownshipTale.Api.Core.Server.Subscriptions
+﻿namespace TownshipTale.Api.Core
 {
     public sealed class SubscriptionFeed
     { 
