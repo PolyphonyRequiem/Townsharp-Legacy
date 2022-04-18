@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Text.Json;
-using System.Threading.Tasks;
-using TownshipTale.Api.Core.Server.Console;
+﻿using System.Text.Json;
 using TownshipTale.Api.Identity;
 using TownshipTale.Api.Server.Console;
 

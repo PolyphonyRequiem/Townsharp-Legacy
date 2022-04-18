@@ -1,6 +1,4 @@
-﻿using TownshipTale.Api.Core.Server.Console;
-
-namespace TownshipTale.Api.Server.Console
+﻿namespace TownshipTale.Api.Server.Console
 {
     public interface IConsoleClient
     {

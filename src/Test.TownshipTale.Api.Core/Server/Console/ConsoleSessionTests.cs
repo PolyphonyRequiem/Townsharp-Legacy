@@ -1,5 +1,4 @@
 ﻿using Test.TownshipTale.Api.Core.Fakes;
-using TownshipTale.Api.Core.Server.Console;
 
 namespace Test.TownshipTale.Api.Core.Server.Console
 {

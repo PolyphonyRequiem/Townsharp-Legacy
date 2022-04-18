@@ -1,7 +1,6 @@
 ﻿// See https://aka.ms/new-console-template for more information
 
 using TownshipTale.Api;
-using TownshipTale.Api.Core.Server.Console;
 using TownshipTale.Api.Identity;
 using TownshipTale.Api.Server.Console;
 

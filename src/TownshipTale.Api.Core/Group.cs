@@ -2,7 +2,11 @@
 {
     public class Group
     {
-        public IEnumerable<Player> Players { get; }
+        public int Id { get; }
+
+        public string Name { get; }
+
+        public IEnumerable<Member> Members { get; }
 
         public IEnumerable<Server> Servers { get; }
 

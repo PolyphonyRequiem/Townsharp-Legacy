@@ -1,7 +1,6 @@
 ﻿using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
-using TownshipTale.Api.Core.Server.Console;
 
 namespace TownshipTale.Api.Server.Console
 {
