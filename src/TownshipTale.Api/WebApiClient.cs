@@ -1,5 +1,5 @@
 ﻿using System.Text.Json;
-using TownshipTale.Api.Identity;
+using TownshipTale.Api.Core;
 using TownshipTale.Api.Server.Console;
 
 namespace TownshipTale.Api

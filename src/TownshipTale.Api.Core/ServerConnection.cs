@@ -1,6 +1,6 @@
 ﻿namespace TownshipTale.Api.Core
 {
-    public class Command
+    public class ServerConnection
     {
     }
 }

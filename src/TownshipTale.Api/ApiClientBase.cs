@@ -1,5 +1,5 @@
 ﻿using Polly;
-using TownshipTale.Api.Identity;
+using TownshipTale.Api.Core;
 
 namespace TownshipTale.Api
 {
