@@ -14,7 +14,7 @@
             throw new NotImplementedException();
         }
 
-        internal Task Subscribe<T>(SubscriptionClientEvent meGroupInviteCreate, string key, Action<SubscriptionClientEventMessage<T>> messageHandler)
+        internal Task Subscribe<T>(SubscriptionClientEvent @event, string key, Action<T> messageHandler) where T: SubscriptionClientEventMessage
         { 
             throw new NotImplementedException();
         }

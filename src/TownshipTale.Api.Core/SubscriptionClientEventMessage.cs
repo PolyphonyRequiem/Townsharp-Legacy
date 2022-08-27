@@ -2,69 +2,89 @@
 
 namespace TownshipTale.Api.Core
 {
-    public record SubscriptionClientEventMessage<T>
+    public abstract record SubscriptionClientEventMessage
     {
-        protected SubscriptionClientEventMessage(long id, SubscriptionClientEvent @event, string key, long responseCode, T content)
+        protected SubscriptionClientEventMessage(long id, SubscriptionClientEvent @event, string key, long responseCode)
         {
             Id = id;
             Event = @event;
             Key = key;
             ResponseCode = responseCode;
-            Content = content;
         }
 
         public long Id { get; init; }
         public SubscriptionClientEvent Event { get; init; }
         public string Key { get; init; }
         public long ResponseCode { get; init; }
-        public T Content { get; init; }
     }
 
-    public record GroupMemberUpdateMessage : SubscriptionClientEventMessage<GroupMemberInfo>
+    public record GroupMemberUpdateMessage : SubscriptionClientEventMessage
     {
-        public GroupMemberUpdateMessage(long Id, string Key, long ResponseCode, GroupMemberInfo Content) : base(Id, SubscriptionClientEvent.GroupMemberUpdate, Key, ResponseCode, Content)
+        public GroupMemberUpdateMessage(long id, string key, long responseCode, GroupMemberInfo content) : base(id, SubscriptionClientEvent.GroupMemberUpdate, key, responseCode)
         {
+            this.Content = content;
         }
+
+        public GroupMemberInfo Content { get; init; }
     }
 
-    public record GroupServerStatusMessage : SubscriptionClientEventMessage<ServerInfo>
+    public record GroupServerStatusMessage : SubscriptionClientEventMessage
     {
-        public GroupServerStatusMessage(long Id, string Key, long ResponseCode, ServerInfo Content) : base(Id, SubscriptionClientEvent.GroupServerStatus, Key, ResponseCode, Content)
+        public GroupServerStatusMessage(long id, string key, long responseCode, ServerInfo content) : base(id, SubscriptionClientEvent.GroupServerStatus, key, responseCode)
         {
+            Content = content;
         }
+
+        public ServerInfo Content { get; init; }
     }
 
-    public record GroupUpdateMessage : SubscriptionClientEventMessage<GroupInfo>
+    public record GroupUpdateMessage : SubscriptionClientEventMessage
     {
-        public GroupUpdateMessage(long Id, string Key, long ResponseCode, GroupInfo Content) : base(Id, SubscriptionClientEvent.GroupUpdate, Key, ResponseCode, Content)
+        public GroupUpdateMessage(long id, string key, long responseCode, GroupInfo content) : base(id, SubscriptionClientEvent.GroupUpdate, key, responseCode)
         {
+            Content = content;
         }
+
+        public GroupInfo Content { get; init; }
     }
 
-    public record MeGroupDeleteMessage : SubscriptionClientEventMessage<(GroupInfo, GroupMemberInfo)>
+    public record MeGroupDeleteMessage : SubscriptionClientEventMessage
     {
-        public MeGroupDeleteMessage(long Id, string Key, long ResponseCode, (GroupInfo, GroupMemberInfo) Content) : base(Id, SubscriptionClientEvent.MeGroupDelete, Key, ResponseCode, Content)
+        public MeGroupDeleteMessage(long id, string key, long ResponseCode, (GroupInfo Group, GroupMemberInfo Member) content) : base(id, SubscriptionClientEvent.MeGroupDelete, key, ResponseCode)
         {
+            Content = content;
         }
+
+        public (GroupInfo Group, GroupMemberInfo Member) Content { get; }
     }
 
-    public record MeGroupInviteCreateMessage : SubscriptionClientEventMessage<GroupInfo>
+    public record MeGroupInviteCreateMessage : SubscriptionClientEventMessage
     {
-        public MeGroupInviteCreateMessage(long Id, string Key, long ResponseCode, GroupInfo Content) : base(Id, SubscriptionClientEvent.MeGroupInviteCreate, Key, ResponseCode, Content)
+        public MeGroupInviteCreateMessage(long id, string key, long responseCode, GroupInfo content) : base(id, SubscriptionClientEvent.MeGroupInviteCreate, key, responseCode)
         {
+            Content = content;
         }
-    }
-    public record MeGroupInviteDeleteMessage : SubscriptionClientEventMessage<GroupInfo>
-    {
-        public MeGroupInviteDeleteMessage(long Id, SubscriptionClientEvent Event, string Key, long ResponseCode, GroupInfo Content) : base(Id, SubscriptionClientEvent.MeGroupInviteDelete, Key, ResponseCode, Content)
-        {
-        }
+
+        public GroupInfo Content { get; }
     }
 
-    public record MeGroupCreateMessage : SubscriptionClientEventMessage<GroupInfo>
+    public record MeGroupInviteDeleteMessage : SubscriptionClientEventMessage
     {
-        public MeGroupCreateMessage(long Id, SubscriptionClientEvent Event, string Key, long ResponseCode, GroupInfo Content) : base(Id, SubscriptionClientEvent.MeGroupCreate, Key, ResponseCode, Content)
+        public MeGroupInviteDeleteMessage(long id, string key, long responseCode, GroupInfo content) : base(id, SubscriptionClientEvent.MeGroupInviteDelete, key, responseCode)
         {
+            Content = content;
         }
+
+        public GroupInfo Content { get; }
+    }
+
+    public record MeGroupCreateMessage : SubscriptionClientEventMessage
+    {
+        public MeGroupCreateMessage(long id, string key, long responseCode, GroupInfo content) : base(id, SubscriptionClientEvent.MeGroupCreate, key, responseCode)
+        {
+            Content = content;
+        }
+
+        public GroupInfo Content { get; }
     }
 }

@@ -1,8 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
-using Polly.Retry;
-using System.Reflection.Metadata.Ecma335;
-using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace TownshipTale.Api.Core
@@ -48,7 +45,7 @@ namespace TownshipTale.Api.Core
                 {"client_id", credential.ClientId },
                 {"client_secret", credential.ClientSecret }
             };
-            var accessToken = await Policy.Handle<Exception>()
+            var accessTokenResult = await Policy.Handle<Exception>()
                 .WaitAndRetryForeverAsync(retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, Math.Max(retryAttempt, 10))),
                 (exception, timespan) =>
                 {
@@ -77,7 +74,15 @@ namespace TownshipTale.Api.Core
                         cachedAccessToken = token;
                         return token;
                     }
-                });            
+                });
+            if (accessTokenResult.Outcome == OutcomeType.Successful)
+            {
+                return accessTokenResult.Result;
+            }
+            else
+            {
+                throw accessTokenResult.FinalException ?? new InvalidOperationException("Something went wrong retrieving the access token.");
+            }
         }
     }
 }
