@@ -1,5 +1,4 @@
-﻿using TownshipTale.Api.Core.Utilities;
-
+﻿
 namespace TownshipTale.Api.Core
 {
     public record Scope
@@ -20,7 +19,8 @@ namespace TownshipTale.Api.Core
 
         static Scope()
         {
-            Values = Values = DiscreteValuesRecordHelpers.GetStaticMappings<Scope>(_ => _.Value);
+            Values = new Dictionary<string, Scope>();
+            //Values = Values = DiscreteValuesRecordHelpers.GetStaticMappings<Scope>(_ => _.Value);
         }
 
         private static Dictionary<string, Scope> Values;

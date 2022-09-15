@@ -1,12 +1,10 @@
-﻿using TownshipTale.Api.Core;
-
-namespace TownshipTale.Api.Core.Api.Schemas
+﻿namespace Townsharp.Infra.Alta.Api
 {
     public record struct ServerFleet
     {
         private ServerFleet(string identifier)
         {
-            this.Identifier = identifier;
+            Identifier = identifier;
         }
 
         public string Identifier { get; }
@@ -17,6 +15,7 @@ namespace TownshipTale.Api.Core.Api.Schemas
         static ServerFleet()
         {
             //Values = DiscreteValuesRecordHelpers.GetStaticMappings<ServerFleet>(_ => _.Identifier);
+            Values = new Dictionary<string, ServerFleet>();
         }
 
         private static Dictionary<string, ServerFleet> Values;

@@ -13,10 +13,5 @@
         {
             throw new NotImplementedException();
         }
-
-        internal Task Subscribe<T>(SubscriptionClientEvent @event, string key, Action<T> messageHandler) where T: SubscriptionClientEventMessage
-        { 
-            throw new NotImplementedException();
-        }
     }
 }

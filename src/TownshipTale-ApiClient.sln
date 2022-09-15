@@ -22,21 +22,31 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "apps", "apps", "{2EFAFEAC-4
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "services", "services", "{7F36AC30-D5C3-4726-A060-AD3A265301CE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Township.ConsoleRepl", "Township.ConsoleRepl\Township.ConsoleRepl.csproj", "{8D654E44-3C31-469A-92C3-8587DCF5FD21}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Township.ConsoleRepl", "Township.ConsoleRepl\Township.ConsoleRepl.csproj", "{8D654E44-3C31-469A-92C3-8587DCF5FD21}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp", "TownsharpTale\Townsharp.csproj", "{9F9B934A-2CEB-4BDD-8774-D4164CDDA52C}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TownsharpTale.WebApiSubscriptionListener", "TownsharpTale.WebApiSubscriptionListener\TownsharpTale.WebApiSubscriptionListener.csproj", "{1ED8E736-33C1-4BF0-8017-B4646F3EB5A9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TownsharpTale.WebApiSubscriptionListener", "TownsharpTale.WebApiSubscriptionListener\TownsharpTale.WebApiSubscriptionListener.csproj", "{1ED8E736-33C1-4BF0-8017-B4646F3EB5A9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Townsharp.Hosting", "Townsharp.Hosting\Townsharp.Hosting.csproj", "{4583628E-4667-4607-8315-DD927A3B0DDE}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp.Hosting", "Townsharp.Hosting\Townsharp.Hosting.csproj", "{4583628E-4667-4607-8315-DD927A3B0DDE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Townsharp.LiveMapper", "Townsharp.LiveMapper\Townsharp.LiveMapper.csproj", "{FEE1C2C3-52BD-4D55-A695-4BF78E6A669D}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp.LiveMapper", "Townsharp.LiveMapper\Townsharp.LiveMapper.csproj", "{FEE1C2C3-52BD-4D55-A695-4BF78E6A669D}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Townsharp.Hosting.AspNetCore", "Townsharp.Hosting.AspNetCore\Townsharp.Hosting.AspNetCore.csproj", "{F888E172-7561-4511-989E-5B8C05CFFFB5}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp.Hosting.AspNetCore", "Townsharp.Hosting.AspNetCore\Townsharp.Hosting.AspNetCore.csproj", "{F888E172-7561-4511-989E-5B8C05CFFFB5}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "z_early-protos", "z_early-protos", "{ABEA3489-0D59-4B7A-82AE-852ED9CB5DEB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test.Townsharp", "Test.Townsharp\Test.Townsharp.csproj", "{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.Townsharp", "Test.Townsharp\Test.Townsharp.csproj", "{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp.Infra", "Townsharp.Infra\Townsharp.Infra.csproj", "{EF44220E-26FA-40DB-9F39-0C68A9DC056E}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Test.Townsharp.Infra", "Test.Townsharp.Infra\Test.Townsharp.Infra.csproj", "{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Subscriptions", "Subscriptions", "{A107E9BA-E718-4226-BC6F-E12C0F24070B}"
+	ProjectSection(SolutionItems) = preProject
+		..\docs\Subscriptions\Event-group-server-status.md = ..\docs\Subscriptions\Event-group-server-status.md
+		..\docs\Subscriptions\Overview.md = ..\docs\Subscriptions\Overview.md
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -84,6 +94,14 @@ Global
 		{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EF44220E-26FA-40DB-9F39-0C68A9DC056E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EF44220E-26FA-40DB-9F39-0C68A9DC056E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EF44220E-26FA-40DB-9F39-0C68A9DC056E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EF44220E-26FA-40DB-9F39-0C68A9DC056E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -99,6 +117,9 @@ Global
 		{FEE1C2C3-52BD-4D55-A695-4BF78E6A669D} = {7F36AC30-D5C3-4726-A060-AD3A265301CE}
 		{F888E172-7561-4511-989E-5B8C05CFFFB5} = {B98E5FC7-5F3B-427A-979D-B146398E1166}
 		{681DB38D-DAC5-41C9-8ED8-0DEF5A28B096} = {2DE93603-00CE-4CF7-8E1A-D495551C84F6}
+		{EF44220E-26FA-40DB-9F39-0C68A9DC056E} = {B98E5FC7-5F3B-427A-979D-B146398E1166}
+		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82} = {2DE93603-00CE-4CF7-8E1A-D495551C84F6}
+		{A107E9BA-E718-4226-BC6F-E12C0F24070B} = {557934AD-B270-46E6-90B6-DB1B616EFCB0}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C02D4807-D069-4868-AA91-ECF877998A5F}

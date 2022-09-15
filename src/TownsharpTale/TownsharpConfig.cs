@@ -1,10 +1,8 @@
-﻿using Townsharp.Identity;
-
-namespace Townsharp
+﻿namespace Townsharp
 {
     public class TownsharpConfig
     {
-        public TownsharpConfig(IdentityConfig identityConfig)
+        public TownsharpConfig()
         {
 
         }
