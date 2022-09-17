@@ -12,6 +12,8 @@ public class SubscriptionListener : IHostedService
     private readonly SubscriptionClient subscriptionClient;
     private readonly ApiClient apiClient;
     private readonly ActivitySource activitySource = new ActivitySource(nameof(SubscriptionListener));
+    
+    private int total = 0;
 
     public SubscriptionListener(Session session, ILogger<SubscriptionListener> logger, SubscriptionClient subscriptionClient, ApiClient apiClient)
     {
@@ -38,7 +40,11 @@ public class SubscriptionListener : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         this.logger.LogInformation($"Subscribing to GroupStatusChanged events");
-        this.subscriptionClient.GroupStatusChanged.Subscribe(message => this.logger.LogInformation(message.ToString()));
+        
+        //this.subscriptionClient.GroupStatusChanged.Subscribe(message => this.logger.LogInformation(message.ToString()));
+        this.subscriptionClient.GroupStatusChanged.Subscribe(_ => this.total++);
+
+        await this.subscriptionClient.Connect();
 
         using (Activity startup = activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
         {
@@ -48,22 +54,21 @@ public class SubscriptionListener : IHostedService
             {
                 await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
                 {
-                    try
-                    {
-                        await this.subscriptionClient.SendMessage(HttpMethod.Post, $"subscription/group-server-status/{g.Group.Id}");
-                    }
-                    catch (System.TimeoutException)
-                    {
-                        // ignore it, it happens.
-                    }
+                    await this.subscriptionClient.Subscribe("group-server-status", g.Group.Id.ToString());
                 });
-
-                this.logger.LogInformation($"SEND: {this.subscriptionClient.sendTotal} RECV: {this.subscriptionClient.receiveTotal} ERROR: {this.subscriptionClient.errorTotal}"); 
             }
         }
-                
+
+        _ = Task.Run(() => PeriodicUpdate());
         await Task.Delay(-1);
         //return this.session.Start(cancellationToken);        
+    }
+
+    public async Task PeriodicUpdate()
+    {
+        await Task.Delay(TimeSpan.FromMinutes(5));
+        this.logger.LogInformation($"TOTAL GroupStatusChanged events: {total}");
+        _ = Task.Run(() => PeriodicUpdate());
     }
 
     public Task StopAsync(CancellationToken cancellationToken)

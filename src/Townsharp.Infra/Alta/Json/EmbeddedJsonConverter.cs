@@ -1,6 +1,7 @@
 ﻿using System.Text;
 using System.Text.Json.Serialization;
 using System.Text.Json;
+using System.Reflection.PortableExecutable;
 
 namespace Townsharp.Infra.Alta.Json
 {
@@ -15,7 +16,8 @@ namespace Townsharp.Infra.Alta.Json
 
         public override void Write(Utf8JsonWriter writer, TJson value, JsonSerializerOptions options)
         {
-            throw new NotImplementedException();
+            var jsonValue = System.Text.Json.JsonSerializer.Serialize(value, options);
+            writer.WriteStringValue(jsonValue);
         }
     }
 }

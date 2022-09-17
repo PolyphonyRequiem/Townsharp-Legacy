@@ -8,7 +8,8 @@
 {
     "id": 1,
     "method": "POST",
-    "path": "subscription/group-server-status/1156211297", "authorization": "Bearer eyJh..."
+    "path": "subscription/group-server-status/1156211297",
+    "authorization": "Bearer eyJh..."
 }
 ```
 
@@ -182,4 +183,29 @@
     "created_at": "2021-09-10T20:34:29.2385673Z"
 }
 ```
+
+
+## `Migration`
+`Get Migration Token`
+`SEND`
+```json
+{
+    "Id":384,
+    "Method":"GET",
+    "Path":"migrate",
+    "Authorization":"Bearer eyJhb..."
+}
+
+```
+
+`RECV`
+```json
+{
+    "id":384,
+    "event":"response",
+    "key":"GET /ws/migrate",
+    "content":"{"token":"eyJhbGc..."}",
+    "responseCode":200}
+```
+
 
