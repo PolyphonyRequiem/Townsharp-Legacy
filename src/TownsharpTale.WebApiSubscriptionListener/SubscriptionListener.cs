@@ -23,13 +23,13 @@ public class SubscriptionListener : IHostedService
         this.apiClient = apiClient;
         this.session.SessionReady += OnSessionReady;
 
-        ActivitySource.AddActivityListener(new ActivityListener()
-        {
-            ShouldListenTo = (source) => true,
-            Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
-            ActivityStarted = activity => Console.WriteLine("Started: {0,-15} {1,-60}", activity.OperationName, activity.Id),
-            ActivityStopped = activity => Console.WriteLine("Stopped: {0,-15} {1,-60} {2,-15}", activity.OperationName, activity.Id, activity.Duration)
-        });
+        //ActivitySource.AddActivityListener(new ActivityListener()
+        //{
+        //    ShouldListenTo = (source) => true,
+        //    Sample = (ref ActivityCreationOptions<ActivityContext> options) => ActivitySamplingResult.AllDataAndRecorded,
+        //    ActivityStarted = activity => Console.WriteLine("Started: {0,-15} {1,-60}", activity.OperationName, activity.Id),
+        //    ActivityStopped = activity => Console.WriteLine("Stopped: {0,-15} {1,-60} {2,-15}", activity.OperationName, activity.Id, activity.Duration)
+        //});
     }
 
     private void OnSessionReady(SessionReadyEvent obj)
@@ -46,11 +46,11 @@ public class SubscriptionListener : IHostedService
 
         await this.subscriptionClient.Connect();
 
-        using (Activity startup = activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
+        using (activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
         {
             var joinedGroups = await this.apiClient.GetJoinedGroups();
 
-            using (Activity subscribe = activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
+            using (activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
             {
                 await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
                 {
@@ -66,7 +66,7 @@ public class SubscriptionListener : IHostedService
 
     public async Task PeriodicUpdate()
     {
-        await Task.Delay(TimeSpan.FromMinutes(5));
+        await Task.Delay(TimeSpan.FromMinutes(.5));
         this.logger.LogInformation($"TOTAL GroupStatusChanged events: {total}");
         _ = Task.Run(() => PeriodicUpdate());
     }

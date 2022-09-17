@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using Polly;
 using System.Collections.Concurrent;
 using System.Net.WebSockets;
 using System.Reactive.Linq;
@@ -10,7 +11,6 @@ using Townsharp.Infra.Alta.Api.Identity;
 using Townsharp.Infra.Alta.Configuration;
 using Townsharp.Infra.Alta.Json;
 using Websocket.Client;
-using Websocket.Client.Models;
 
 namespace Townsharp.Infra.Alta.Subscriptions
 {
@@ -18,6 +18,8 @@ namespace Townsharp.Infra.Alta.Subscriptions
     {
         public readonly static Uri SubscriptionWebsocketUri = new Uri("wss://5wx2mgoj95.execute-api.ap-southeast-2.amazonaws.com/dev");
         public readonly static TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);
+        public readonly static TimeSpan MigrationFrequency = TimeSpan.FromMinutes(20);
+        public readonly static AsyncPolicy<string> MessageRetryPolicy = Policy<string>.Handle<TimeoutException>().RetryAsync(2);
 
         // Dependencies
         private readonly AccountsTokenClient tokenClient;
@@ -25,10 +27,10 @@ namespace Townsharp.Infra.Alta.Subscriptions
         private readonly ILogger<SubscriptionClient> logger;
 
         // WebSocket state
-        private bool disposedValue = false;
-        private int messageId = 1;
         private State state = State.Disconnected;
         private WebsocketClient? client;
+        private bool disposedValue = false;
+        private int messageId = 1;
         private string? authToken;
         private ConcurrentDictionary<string, ConcurrentBag<string>> subscriptions = new ConcurrentDictionary<string, ConcurrentBag<string>>();
 
@@ -38,6 +40,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         // Subscription Handlers
         // NOTE: make this public and subscribe on generics with a handler method.
+        // Alternatively, may not be an appropriate type to even be emitting domain models, time to design the domain interface.
         public IObservable<GroupServerStatusMessage> GroupStatusChanged => GroupStatusChangedSubject;
         public readonly Subject<GroupServerStatusMessage> GroupStatusChangedSubject = new Subject<GroupServerStatusMessage>();
 
@@ -106,15 +109,24 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private async Task SendSubscriptionRequest(WebsocketClient client, string eventname, string key)
         {
-            await this.SendMessageWithWebSocketClient(client, HttpMethod.Post, $"subscription/{eventname}/{key}");
+            await MessageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(client, HttpMethod.Post, $"subscription/{eventname}/{key}"));
         }
 
         // Websocket Implementation
         private async Task<WebsocketClient> CreateWebsocketClient()
         {
-            logger.LogInformation("Creating a new websocket client");
+            logger.LogDebug("Creating a new websocket client");
 
-            var client = new WebsocketClient(SubscriptionWebsocketUri, WebSocketFactory)
+            var client = new WebsocketClient(SubscriptionWebsocketUri, () =>
+                {
+                    this.authToken = this.tokenClient.GetValidToken().Result.AccessToken;
+                    var client = new ClientWebSocket();
+                    client.Options.KeepAliveInterval = TimeSpan.FromMinutes(15);
+                    client.Options.SetRequestHeader("Authorization", $"Bearer {this.authToken}");
+                    client.Options.SetRequestHeader("x-api-key", clientConfiguration.ApiKey);
+                    client.Options.SetRequestHeader("Content-Type", "application/json");
+                    return client;
+                })
             {
                 Name = $"Subscriptions-{DateTime.UtcNow}",
                 ReconnectTimeout = null,
@@ -126,29 +138,13 @@ namespace Townsharp.Infra.Alta.Subscriptions
             return client;
         }
 
-        private ClientWebSocket WebSocketFactory()
-        {
-            this.authToken = this.tokenClient.GetValidToken().Result.AccessToken;
-            var client = new ClientWebSocket();
-            client.Options.KeepAliveInterval = TimeSpan.FromMinutes(15);
-            client.Options.SetRequestHeader("Authorization", $"Bearer {this.authToken}");
-            client.Options.SetRequestHeader("x-api-key", clientConfiguration.ApiKey);
-            client.Options.SetRequestHeader("Content-Type", "application/json");
-            return client;
-        }
-
-        private async Task<string> SendMessage(HttpMethod method, string path)
+        private async Task<string> SendMessage(WebsocketClient client, HttpMethod method, string path, object? payload = default)
         {
             if (this.state == State.Disconnected)
             {
                 throw new InvalidOperationException("Unable to send messages on a disconnected client.");
             }
 
-            return await SendMessageWithWebSocketClient(this.client!, method, path);
-        }
-
-        private async Task<string> SendMessageWithWebSocketClient(WebsocketClient client, HttpMethod method, string path, object? payload = default)
-        {
             // make sure we aren't migrating (unless path is migrate)
             if (path != "migrate")
             {
@@ -174,11 +170,11 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 },
                 exception =>
                 {
-                    this.logger.LogError(exception, $"An error occurred while awaiting response for id: {id}");
+                    this.logger.LogWarning(exception, $"An error occurred while awaiting response for id: {id}");
                     tcs.SetException(exception);
                 });
 
-            var messageText = JsonSerializer.Serialize(message);
+            var messageText = JsonSerializer.Serialize(message, WebApiJsonSerializerOptions.Default);
             client.Send(messageText);
 
             return await tcs.Task;
@@ -186,7 +182,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private void ScheduleMigration()
         {
-            Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(_ => MigrateWebSocket());
+            Task.Delay(MigrationFrequency).ContinueWith(_ => MigrateWebSocket());
         }
 
         private async Task MigrateWebSocket()
@@ -200,11 +196,11 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 {
                     // only one thing should be calling migrate at a time at all since there's only the one migration callsite.
                     this.StartMigration();
-                    var token = await GetMigrationToken();
+                    var token = await GetMigrationToken(oldClient);
 
                     // send migration token on a new websocket!
-                    string migrationResult = await this.SendMessageWithWebSocketClient(newClient, HttpMethod.Post, "migrate", new { token = token });
-                    logger.LogInformation(migrationResult);
+                    string migrationResult = await MessageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", new { token = token }));
+                    logger.LogDebug($"MigrationResult {migrationResult}");
 
                     if (migrationResult.Contains("error"))
                     {
@@ -260,13 +256,14 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
         }
 
-        private async Task<string> GetMigrationToken()
+        private async Task<string> GetMigrationToken(WebsocketClient client)
         {
             string? migrationTokenRequestResult = null;
             try
             {
-                migrationTokenRequestResult = await this.SendMessage(HttpMethod.Get, "migrate");
-                logger.LogInformation(migrationTokenRequestResult);
+                // no retry here, once it's sent we have to assume migration was accepted, if we don't get a reply, we have to execute a recovery.
+                migrationTokenRequestResult = await this.SendMessage(client, HttpMethod.Get, "migrate");
+                logger.LogDebug($"Migration Request Result {migrationTokenRequestResult}");
                 var response = JsonSerializer.Deserialize<SubscriptionClientMigrationTokenMessage>(migrationTokenRequestResult, WebApiJsonSerializerOptions.Default)!;
                 return response.Content.Token;
             }
@@ -335,22 +332,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
             return "";
         }
 
-        // Message Subscription Handlers
-        private void MessageReceived(ResponseMessage message)
-        {
-            this.logger.LogDebug($"RECEIVED:{message.Text}");
-        }
-
-        private void DisconnectionHappened(DisconnectionInfo message)
-        {
-            this.logger.LogWarning($"DISCONNECTED: {message.CloseStatus} :: {message.CloseStatusDescription}");
-        }
-
-        private void ReconnectionHappened(ReconnectionInfo message)
-        {
-            this.logger.LogWarning($"RECONNECTED: {message.Type}");
-        }
-
         // Disposal
         protected virtual void Dispose(bool disposing)
         {
@@ -370,61 +351,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
             Dispose(disposing: true);
             GC.SuppressFinalize(this);
         }
-
-        //private async Task EnsureWebsocketConnected()
-        //{
-        //    if (this.state == State.Disconnected)
-        //    {
-        //        await this.creatingWebsocket.WaitAsync();
-
-        //        try
-        //        {
-        //            // Check the state again.
-        //            if (this.state == State.Disconnected)
-        //            {
-        //                logger.LogInformation("Creating a new websocket client");
-
-        //                // Cancel any existing websocket.
-        //                this.cancellationTokenSource.Cancel();
-        //                this.cancellationTokenSource = new CancellationTokenSource();
-
-        //                var client = new WebsocketClient(SubscriptionWebsocketUri, WebSocketFactory)
-        //                {
-        //                    Name = $"Subscriptions-{DateTime.UtcNow}",
-        //                    ReconnectTimeout = null,
-        //                    ErrorReconnectTimeout = TimeSpan.Zero
-        //                };
-
-        //                //var messageReceivedSubscription = client.MessageReceived.Subscribe(MessageReceived);
-        //                //var disconnectionHappenedSubscription = client.DisconnectionHappened.Subscribe(DisconnectionHappened);
-        //                //var reconnectionHappenedSubscription = client.ReconnectionHappened.Subscribe(ReconnectionHappened);
-
-        //                //var groupedMessages = client.MessageReceived.GroupBy(ExtractEventType);
-
-        //                //groupedMessages.Where(grp => grp.Key == "group-server-status")
-        //                //    .SelectMany(grp => grp.Select(TransformGroupServerStatus<GroupServerStatusMessage>))
-        //                //    .Subscribe(message => this.GroupStatusChanged.OnNext(message));
-
-        //                await client.Start();
-        //                this.cancellationTokenSource.Token.Register(async () =>
-        //                {
-        //                    await CloseWebsocket(client);
-        //                    //messageReceivedSubscription.Dispose();
-        //                    //disconnectionHappenedSubscription.Dispose();
-        //                    //reconnectionHappenedSubscription.Dispose();
-        //                });
-
-        //                this.client = client;
-        //                this.state = State.Connected;
-        //                this.migrationDue = Task.Delay(TimeSpan.FromMinutes(1)).ContinueWith(_ => MigrateWebSocket());
-        //            }
-        //        }
-        //        finally
-        //        {
-        //            this.creatingWebsocket.Release();
-        //        }
-        //    }
-        //}
 
         // Internal Types
         private record SubscriptionClientRequestMessage
