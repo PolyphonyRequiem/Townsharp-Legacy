@@ -11,6 +11,7 @@ using Townsharp.Infra.Alta.Api.Identity;
 using Townsharp.Infra.Alta.Configuration;
 using Townsharp.Infra.Alta.Json;
 using Websocket.Client;
+using Websocket.Client.Models;
 
 namespace Townsharp.Infra.Alta.Subscriptions
 {
@@ -20,6 +21,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         public readonly static TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);
         public readonly static TimeSpan MigrationFrequency = TimeSpan.FromMinutes(20);
         public readonly static AsyncPolicy<string> MessageRetryPolicy = Policy<string>.Handle<TimeoutException>().RetryAsync(2);
+        public AsyncPolicy RecoveryPolicy { get; init; }
 
         // Dependencies
         private readonly AccountsTokenClient tokenClient;
@@ -37,6 +39,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // Scheduling and synchronization
         private SemaphoreSlim creatingWebsocket = new SemaphoreSlim(1, 1);
         private TaskCompletionSource migrationTaskSource = new TaskCompletionSource();
+        private CancellationTokenSource scheduledMigrationCancellationTokenSource = new CancellationTokenSource();
 
         // Subscription Handlers
         // NOTE: make this public and subscribe on generics with a handler method.
@@ -50,6 +53,10 @@ namespace Townsharp.Infra.Alta.Subscriptions
             this.clientConfiguration = clientConfiguration;
             this.logger = logger;
             this.migrationTaskSource.SetResult();
+            this.RecoveryPolicy = Policy.Handle<Exception>()
+                .WaitAndRetryForeverAsync(
+                    i => TimeSpan.FromSeconds(Math.Max(i, 5)),
+                    (exc, i, time) => this.logger.LogInformation($"Attempting recovery retry. ({i}) - {time.TotalSeconds}s delay - last error: {exc.Message}"));
         }
 
         //NOTE: consider capturing operation contexts functionally to prevent state mangling
@@ -72,7 +79,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                     if (this.state == State.Disconnected)
                     {
                         var client = await CreateWebsocketClient();
-                        RegisterSubscriptionsForWebsocket(client);
+                        this.RegisterSubscriptionsForWebsocket(client);
                         this.client = client;
                         this.state = State.Connected;
                         ScheduleMigration();
@@ -133,6 +140,10 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 ErrorReconnectTimeout = TimeSpan.Zero
             };
 
+            client.MessageReceived.Subscribe(MessageReceived);
+            client.DisconnectionHappened.Subscribe(DisconnectionHappened);
+            client.ReconnectionHappened.Subscribe(ReconnectionHappened);
+
             await client.Start();
             this.state = State.Connected;
             return client;
@@ -145,10 +156,10 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 throw new InvalidOperationException("Unable to send messages on a disconnected client.");
             }
 
-            // make sure we aren't migrating (unless path is migrate)
+            // delay outgoing messages (unless path is migrate)
             if (path != "migrate")
             {
-                await migrationTaskSource.Task;
+                await this.migrationTaskSource.Task;
             }
 
             var id = this.messageId++;
@@ -160,7 +171,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
             client
                 .MessageReceived
-                .Where(message => IsResponseMessageForId(message, id))
+                .Where(response => IsResponseMessageForId(response, id))
                 .Take(1)
                 .Timeout(ResponseTimeout)
                 .Subscribe(response =>
@@ -182,7 +193,9 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private void ScheduleMigration()
         {
-            Task.Delay(MigrationFrequency).ContinueWith(_ => MigrateWebSocket());
+            this.scheduledMigrationCancellationTokenSource.Cancel();
+            this.scheduledMigrationCancellationTokenSource = new CancellationTokenSource();
+            Task.Delay(MigrationFrequency, this.scheduledMigrationCancellationTokenSource.Token).ContinueWith(_ => MigrateWebSocket(), this.scheduledMigrationCancellationTokenSource.Token);
         }
 
         private async Task MigrateWebSocket()
@@ -195,7 +208,9 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 try
                 {
                     // only one thing should be calling migrate at a time at all since there's only the one migration callsite.
-                    this.StartMigration();
+                    this.state = State.Migrating;
+                    logger.LogWarning($"MIGRATION STARTED! {DateTime.Now}");
+                    this.migrationTaskSource = new TaskCompletionSource();
                     var token = await GetMigrationToken(oldClient);
 
                     // send migration token on a new websocket!
@@ -215,45 +230,59 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 //Success! Let's close the old websocket and swap out for the new one.
                 this.client = newClient;
                 await this.CloseWebsocket(oldClient);
-                CompleteMigration();
+                logger.LogWarning($"MIGRATION COMPLETED! {DateTime.Now}");
+                this.state = State.Connected;
+                this.migrationTaskSource.SetResult();
                 this.ScheduleMigration();
             }
-        }
-
-        private void StartMigration()
-        {
-            this.state = State.Migrating;
-            logger.LogWarning($"MIGRATION STARTED! {DateTime.Now}");
-            this.migrationTaskSource = new TaskCompletionSource();
-        }
-
-        private void CompleteMigration()
-        {
-            logger.LogWarning($"MIGRATION COMPLETED! {DateTime.Now}");
-            this.state = State.Connected;
-            this.migrationTaskSource.SetResult();            
         }
 
         private async Task RecoverSubscriptions(WebsocketClient recoveryClient)
         {
             if (this.state == State.Migrating)
             {
-                logger.LogWarning($"ATTEMPTING RECOVERY! {DateTime.Now}");
-                foreach (var eventName in this.subscriptions.Keys)
-                {
-                    await Parallel.ForEachAsync(this.subscriptions[eventName], new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (key, _) =>
-                    {
-                        try
-                        {
-                            await this.SendSubscriptionRequest(recoveryClient, eventName, key);
-                        }
-                        catch (TimeoutException timeout)
-                        {
-                            logger.LogError(timeout, $"Timeout occurred during subscription recovery for {eventName}/{key}");
-                        }
-                    });
-                }
+                logger.LogWarning($"ATTEMPTING RECOVERY FROM FAILED MIGRATION! {DateTime.Now}");
             }
+
+            if (this.state == State.Faulted)
+            {
+                logger.LogWarning($"ATTEMPTING RECOVERY FROM UNEXPECTEDLY TERMINATED CONNECTION! {DateTime.Now}");
+            }
+
+            await this.RecoveryPolicy.ExecuteAsync(async () =>
+                {
+                    foreach (var eventName in this.subscriptions.Keys)
+                    {
+                        await Parallel.ForEachAsync(this.subscriptions[eventName], new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (key, _) =>
+                        {
+                            try
+                            {
+                                await this.SendSubscriptionRequest(recoveryClient, eventName, key);
+                            }
+                            catch (TimeoutException timeout)
+                            {
+                                logger.LogError(timeout, $"Timeout occurred during subscription recovery for {eventName}/{key}");
+                            }
+                        });
+                    }
+
+                    this.state = State.Connected;
+                });
+        }
+
+        private async Task RecoverFaultedConnection()
+        {
+            this.state = State.Faulted;
+            this.logger.LogWarning("The connection with the server was lost.  Assuming all subscriptions were wiped out.  Attempting recovery.");
+            WebsocketClient oldClient = this.client!;
+            WebsocketClient newClient = await CreateWebsocketClient();
+            this.RegisterSubscriptionsForWebsocket(newClient);
+            this.ScheduleMigration();
+            await RecoverSubscriptions(newClient);
+            this.client = newClient;
+            await this.CloseWebsocket(oldClient);
+            this.logger.LogWarning("Connection re-established and subscriptions restored.");
+            this.state = State.Connected;
         }
 
         private async Task<string> GetMigrationToken(WebsocketClient client)
@@ -274,18 +303,35 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
             catch (NotSupportedException nse)
             {
-                logger.LogError($"Unable to serialize the response from the migration request.  This likely means the response does not indicated success.{Environment.NewLine}{migrationTokenRequestResult??"N/A"}", nse);
+                logger.LogError($"Unable to serialize the response from the migration request.  This likely means the response does not indicated success.{Environment.NewLine}{migrationTokenRequestResult ?? "N/A"}", nse);
                 throw;
             }
         }
 
-        private void RegisterSubscriptionsForWebsocket(WebsocketClient newClient)
+        private void RegisterSubscriptionsForWebsocket(WebsocketClient client)
         {
-            var groupedMessages = newClient.MessageReceived.GroupBy(ExtractEventType);
+            this.logger.LogDebug($"Registering subscriptions for websocket. {client.Name}");
+            var groupedMessages = client.MessageReceived.GroupBy(ExtractEventType);
 
             groupedMessages.Where(grp => grp.Key == "group-server-status")
                 .SelectMany(grp => grp.Select(TransformGroupServerStatus<GroupServerStatusMessage>))
                 .Subscribe(message => this.GroupStatusChangedSubject.OnNext(message));
+
+            client
+                .MessageReceived
+                .Where(response => response.Text.Contains("Error", StringComparison.InvariantCultureIgnoreCase))
+                .Subscribe(response =>
+                {
+                    this.logger.LogError($"A response was received with an error.{Environment.NewLine}{response.Text}");
+                });
+
+            client
+                .MessageReceived
+                .Where(response => response.Text.Contains("\"responseCode\":", StringComparison.InvariantCultureIgnoreCase) && !response.Text.Contains("\"responseCode\":200", StringComparison.InvariantCultureIgnoreCase))
+                .Subscribe(response =>
+                {
+                    this.logger.LogError($"A response was received with a status code that does not indicate success.{Environment.NewLine}{response.Text}");
+                });
         }
 
         private async Task CloseWebsocket(WebsocketClient client)
@@ -330,6 +376,27 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
 
             return "";
+        }
+
+        private void MessageReceived(ResponseMessage responseMessage)
+        {
+            this.logger.LogDebug($"RECEIVED: {responseMessage.Text}");
+        }
+
+        private void DisconnectionHappened(DisconnectionInfo disconnectionInfo)
+        {
+            this.logger.LogDebug($"DISCONNECTED: Type-{disconnectionInfo.Type} Status-{disconnectionInfo.CloseStatus} :: {disconnectionInfo.CloseStatusDescription}");
+
+            if (disconnectionInfo.Type == DisconnectionType.Lost)
+            {
+                // we got dropped.  Something happend Alta side, perhaps a service update.  Either way, we have to assume all of our subscriptions were lost.  Let's initiate recovery.
+                Task.Run(RecoverFaultedConnection);
+            }
+        }
+
+        private void ReconnectionHappened(ReconnectionInfo reconnectionInfo)
+        {
+            this.logger.LogDebug($"RECONNECTED: Type-{reconnectionInfo.Type}");
         }
 
         // Disposal
@@ -415,7 +482,8 @@ namespace Townsharp.Infra.Alta.Subscriptions
         {
             Disconnected,
             Connected,
-            Migrating
+            Migrating,
+            Faulted
         }
     }
 }

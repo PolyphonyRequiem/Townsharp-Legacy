@@ -1,5 +1,7 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 using Polly;
 using Townsharp;
 using Townsharp.Hosting;
@@ -16,12 +18,19 @@ var builder = Host.CreateDefaultBuilder()
 
 await builder.RunConsoleAsync();
 
-void ConfigureServices(IServiceCollection services)
+void ConfigureServices(HostBuilderContext context, IServiceCollection services)
 {
     IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
     services.AddTownsharp(new TownsharpConfig());
     services.AddHostedService<SubscriptionListener>();
-
+    services.AddLogging(configure =>
+    {
+        configure.AddConfiguration(context.Configuration.GetSection("Logging"));
+        configure.AddFile(config =>
+        {
+            config.RootPath = AppContext.BaseDirectory;
+        });
+    });
     services.AddDistributedMemoryCache();
     services.AddClientCredentialsTokenManagement()
         .AddClient(TokenManagementNames.AccountsIssuer, client =>
