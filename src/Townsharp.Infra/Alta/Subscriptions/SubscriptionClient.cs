@@ -1,15 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
 using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 using System.Net.WebSockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Api.Identity;
 using Townsharp.Infra.Alta.Configuration;
-using Townsharp.Infra.Alta.Json;
 using Websocket.Client;
 using Websocket.Client.Models;
 
@@ -35,7 +34,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         private bool disposedValue = false;
         private int messageId = 1;
         private string? authToken;
-        private ConcurrentDictionary<string, ConcurrentBag<string>> subscriptions = new ConcurrentDictionary<string, ConcurrentBag<string>>();
+        private ConcurrentDictionary<string, ConcurrentDictionary<string, bool>> subscriptions = new ConcurrentDictionary<string, ConcurrentDictionary<string, bool>>();
 
         // Scheduling and synchronization
         private SemaphoreSlim creatingWebsocket = new SemaphoreSlim(1, 1);
@@ -50,7 +49,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         // NOTE: Consider switching to att-client's "disconnected/reconnected" model and push resubscription upstream into the application model.
         // !!!!!!!!!!!!!! IN FACT! THIS HELPS TOWNSHARP LOGIC TO "RESYNCHRONIZE" ASSUMED STATE FOR THINGS LIKE SERVER POPULATIONS. THIS IS HELPFUL! !!!!!!!!!!!!!!!!
-
         public SubscriptionClient(AccountsTokenClient tokenClient, AltaClientConfiguration clientConfiguration, ILogger<SubscriptionClient> logger)
         {
             this.tokenClient = tokenClient;
@@ -59,7 +57,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
             // needed so that awaiters will immediately proceed.  We aren't migrating at the start, so there's nothing to wait for.
             this.migrationTaskSource.SetResult();
-
 
             // Setup our policies
             this.messageRetryPolicy = Policy<string>.Handle<TimeoutException>()
@@ -74,7 +71,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // NOTE: consider capturing operation contexts functionally to prevent state mangling
         // (meta note, I'm not sure what I meant here, probably applies to a different method than Connect.)
         // I think I'm trying to say we need a "run with context" kind of mechanism.  I don't think we do.  Probably delete these comments in cleanup.
-
         public async Task Connect()
         {
             if (this.state != State.Disconnected)
@@ -118,19 +114,59 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
             if (!this.subscriptions.ContainsKey(eventname))
             {
-                this.subscriptions.TryAdd(eventname, new ConcurrentBag<string>());
+                this.subscriptions.TryAdd(eventname, new ConcurrentDictionary<string, bool>());
             }
 
-            if (!this.subscriptions[eventname].Contains(key))
+            if (!this.subscriptions[eventname].ContainsKey(key))
             {
-                await this.SendSubscriptionRequest(this.client!, eventname, key);
-                this.subscriptions[eventname].Add(key);
+                if (this.subscriptions[eventname].TryAdd(key, true))
+                {
+                    await this.SendSubscriptionRequest(this.client!, eventname, key);
+                }                
             }
+        }
+
+        public async Task<bool> Unsubscribe(string eventname, string key)
+        {
+            if (this.state == State.Disconnected)
+            {
+                throw new InvalidOperationException("Unsubscribe cannot be called on a disconnected client.");
+            }
+
+            // make sure we aren't migrating
+            await migrationTaskSource.Task;
+
+            if (!this.subscriptions.ContainsKey(eventname))
+            {
+                // Then we can't unsubscribe
+                // Silent fail?  Exit?  Return a descriptive type?
+                return false;
+            }
+
+            if (!this.subscriptions[eventname].ContainsKey(key))
+            {
+                // Then we can't unsubscribe
+                // Silent fail?  Exit?  Return a descriptive type?
+                return false;
+            }
+
+            if (this.subscriptions[eventname].Remove(key, out bool _))
+            {
+                await this.SendUnscriptionRequest(this.client!, eventname, key);
+                return true;
+            }
+
+            return false;
         }
 
         private async Task SendSubscriptionRequest(WebsocketClient client, string eventname, string key)
         {
             await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(client, HttpMethod.Post, $"subscription/{eventname}/{key}"));
+        }
+
+        private async Task SendUnscriptionRequest(WebsocketClient client, string eventname, string key)
+        {
+            await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(client, HttpMethod.Delete, $"subscription/{eventname}/{key}"));
         }
 
         // Websocket Implementation
@@ -163,21 +199,21 @@ namespace Townsharp.Infra.Alta.Subscriptions
             return client;
         }
 
-        private async Task<string> SendMessage(WebsocketClient client, HttpMethod method, string path, object? payload = default)
+        private async Task<string> SendMessage(WebsocketClient client, HttpMethod method, string path, string content = "")
         {
             if (this.state == State.Disconnected)
             {
                 throw new InvalidOperationException("Unable to send messages on a disconnected client.");
             }
 
-            // delay outgoing messages (unless path is migrate)
+            // Delay outgoing messages (unless path is migrate)
             if (path != "migrate")
             {
                 await this.migrationTaskSource.Task;
             }
 
             var id = this.messageId++;
-            var message = new SubscriptionClientRequestMessage(id, method, path, this.authToken!, payload);
+            TownshipTaleRequestMessage message = new TownshipTaleRequestMessage(id, method, path, this.authToken!, content);
             this.logger.LogDebug(message.ToString());
 
             // Prepare to receive single response.
@@ -199,7 +235,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                     tcs.SetException(exception);
                 });
 
-            var messageText = JsonSerializer.Serialize(message, WebApiJsonSerializerOptions.Default);
+            var messageText = Serialize(message);
             client.Send(messageText);
 
             return await tcs.Task;
@@ -228,7 +264,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                     var token = await GetMigrationToken(oldClient);
 
                     // send migration token on a new websocket!
-                    string migrationResult = await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", new { token = token }));
+                    string migrationResult = await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", JsonSerializer.Serialize(new { token = token }, WebApiJsonSerializerOptions.Default)));
                     logger.LogDebug($"MigrationResult {migrationResult}");
 
                     // Note: NOPE! Serialize the response if it's JSON and check for errors.  If there's no json, it's an error anyhow.  But this matches on usernames and random BS.
@@ -268,7 +304,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 {
                     foreach (var eventName in this.subscriptions.Keys)
                     {
-                        await Parallel.ForEachAsync(this.subscriptions[eventName], new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (key, _) =>
+                        await Parallel.ForEachAsync(this.subscriptions[eventName].Keys, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (key, _) =>
                         {
                             try
                             {
@@ -308,8 +344,26 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 // no retry here, once it's sent we have to assume migration was accepted, if we don't get a reply, we have to execute a recovery.
                 migrationTokenRequestResult = await this.SendMessage(client, HttpMethod.Get, "migrate");
                 logger.LogDebug($"Migration Request Result {migrationTokenRequestResult}");
-                var response = JsonSerializer.Deserialize<SubscriptionClientMigrationTokenMessage>(migrationTokenRequestResult, WebApiJsonSerializerOptions.Default)!;
-                return response.Content.Token;
+
+                var response = this.Deserialize<TownshipTaleResponseMessage>(migrationTokenRequestResult);
+                
+                if (response.Content.Contains("token", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    var content = this.Deserialize<MigrationTokenContent>(response.Content);
+
+                    return content.Token;
+                }
+                else if (response.Content.Contains("error_code", StringComparison.InvariantCultureIgnoreCase))
+                {
+                    var content = this.Deserialize<ErrorContent>(response.Content);
+                    logger.LogError($"An error occurred during the migration request {content.ErrorCode} - {content.Message}");
+
+                    throw new AltaSubscriptionClientException(content.Message, content.ErrorCode);
+                }
+                else
+                {
+                    throw new InvalidOperationException($"An unexpected error occured during migration.");
+                }
             }
             catch (TimeoutException timeout)
             {
@@ -379,7 +433,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private TMessage TransformGroupServerStatus<TMessage>(ResponseMessage message)
         {
-            return JsonSerializer.Deserialize<TMessage>(message.Text, WebApiJsonSerializerOptions.Default)!;
+            return this.Deserialize<TMessage>(message.Text)!;
         }
 
         private string ExtractEventType(ResponseMessage message)
@@ -414,6 +468,16 @@ namespace Townsharp.Infra.Alta.Subscriptions
             this.logger.LogDebug($"RECONNECTED: Type-{reconnectionInfo.Type}");
         }
 
+        private T Deserialize<T>(string content)
+        {
+            return JsonSerializer.Deserialize<T>(content, WebApiJsonSerializerOptions.Default)!;
+        }
+
+        private string Serialize<T>(T content)
+        {
+            return JsonSerializer.Serialize(content, WebApiJsonSerializerOptions.Default)!;
+        }
+
         // Disposal
         protected virtual void Dispose(bool disposing)
         {
@@ -435,18 +499,18 @@ namespace Townsharp.Infra.Alta.Subscriptions
         }
 
         // Internal Types
-        private record SubscriptionClientRequestMessage
+        private record TownshipTaleRequestMessage
         {
             private readonly bool obfuscateContent;
 
-            public SubscriptionClientRequestMessage(int id, HttpMethod method, string path, string token, object? content = default, bool obfuscatePayload = true)
+            public TownshipTaleRequestMessage(int id, HttpMethod method, string path, string token, string content = "", bool obfuscateContent = true)
             {
                 Id = id;
                 Method = method.Method;
                 Path = path;
                 Authorization = $"Bearer {token}";
-                Content = content == null ? content : JsonSerializer.Serialize(content, WebApiJsonSerializerOptions.Default);
-                this.obfuscateContent = obfuscatePayload;
+                Content = content;
+                this.obfuscateContent = obfuscateContent;
             }
 
             public int Id { get; init; }
@@ -457,7 +521,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
             public string Authorization { get; init; }
 
-            public object? Content { get; init; }
+            public string Content { get; init; }
 
             public override string ToString()
             {
@@ -472,25 +536,31 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
         }
 
-        private record SubscriptionClientMigrationTokenMessage
+        private record TownshipTaleResponseMessage
         {
-            public int Id { get; set; }
+            public int Id { get; init; }
 
-            public string Event { get; set; }
+            public string Event { get; init; } = String.Empty;
 
-            public string Key { get; set; }
+            public string Key { get; init; } = String.Empty;
 
-            public int ResponseCode { get; set; }
+            public int ResponseCode { get; init; }
 
-            [JsonConverter(typeof(EmbeddedJsonConverter<MigrationTokenContent>))]
-            public MigrationTokenContent Content { get; set; }
+            public string Content { get; init; } = String.Empty;
 
             public override string ToString() => $"id: {Id} event: {Event} key: {Key} responseCode: {ResponseCode}";
+        }
 
-            public record MigrationTokenContent
-            {
-                public string Token { get; set; }
-            }
+        private record MigrationTokenContent
+        {
+            public string Token { get; init; } = String.Empty;
+        }
+
+        private record ErrorContent
+        {
+            public string Message { get; init; } = String.Empty;
+
+            public string ErrorCode { get; init; } = String.Empty;
         }
 
         private enum State
