@@ -20,8 +20,9 @@ namespace Townsharp.Infra.Alta.Subscriptions
         public readonly static Uri SubscriptionWebsocketUri = new Uri("wss://5wx2mgoj95.execute-api.ap-southeast-2.amazonaws.com/dev");
         public readonly static TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);
         public readonly static TimeSpan MigrationFrequency = TimeSpan.FromMinutes(20);
-        public readonly static AsyncPolicy<string> MessageRetryPolicy = Policy<string>.Handle<TimeoutException>().RetryAsync(2);
-        public AsyncPolicy RecoveryPolicy { get; init; }
+
+        public readonly AsyncPolicy<string> messageRetryPolicy;
+        public readonly AsyncPolicy recoveryPolicy;
 
         // Dependencies
         private readonly AccountsTokenClient tokenClient;
@@ -47,19 +48,32 @@ namespace Townsharp.Infra.Alta.Subscriptions
         public IObservable<GroupServerStatusMessage> GroupStatusChanged => GroupStatusChangedSubject;
         public readonly Subject<GroupServerStatusMessage> GroupStatusChangedSubject = new Subject<GroupServerStatusMessage>();
 
+        // NOTE: Consider switching to att-client's "disconnected/reconnected" model and push resubscription upstream into the application model.
+        // !!!!!!!!!!!!!! IN FACT! THIS HELPS TOWNSHARP LOGIC TO "RESYNCHRONIZE" ASSUMED STATE FOR THINGS LIKE SERVER POPULATIONS. THIS IS HELPFUL! !!!!!!!!!!!!!!!!
+
         public SubscriptionClient(AccountsTokenClient tokenClient, AltaClientConfiguration clientConfiguration, ILogger<SubscriptionClient> logger)
         {
             this.tokenClient = tokenClient;
             this.clientConfiguration = clientConfiguration;
             this.logger = logger;
+
+            // needed so that awaiters will immediately proceed.  We aren't migrating at the start, so there's nothing to wait for.
             this.migrationTaskSource.SetResult();
-            this.RecoveryPolicy = Policy.Handle<Exception>()
+
+
+            // Setup our policies
+            this.messageRetryPolicy = Policy<string>.Handle<TimeoutException>()
+                .RetryAsync(2);
+
+            this.recoveryPolicy = Policy.Handle<Exception>()
                 .WaitAndRetryForeverAsync(
                     i => TimeSpan.FromSeconds(Math.Max(i, 5)),
                     (exc, i, time) => this.logger.LogInformation($"Attempting recovery retry. ({i}) - {time.TotalSeconds}s delay - last error: {exc.Message}"));
         }
 
-        //NOTE: consider capturing operation contexts functionally to prevent state mangling
+        // NOTE: consider capturing operation contexts functionally to prevent state mangling
+        // (meta note, I'm not sure what I meant here, probably applies to a different method than Connect.)
+        // I think I'm trying to say we need a "run with context" kind of mechanism.  I don't think we do.  Probably delete these comments in cleanup.
 
         public async Task Connect()
         {
@@ -116,7 +130,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private async Task SendSubscriptionRequest(WebsocketClient client, string eventname, string key)
         {
-            await MessageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(client, HttpMethod.Post, $"subscription/{eventname}/{key}"));
+            await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(client, HttpMethod.Post, $"subscription/{eventname}/{key}"));
         }
 
         // Websocket Implementation
@@ -214,9 +228,10 @@ namespace Townsharp.Infra.Alta.Subscriptions
                     var token = await GetMigrationToken(oldClient);
 
                     // send migration token on a new websocket!
-                    string migrationResult = await MessageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", new { token = token }));
+                    string migrationResult = await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", new { token = token }));
                     logger.LogDebug($"MigrationResult {migrationResult}");
 
+                    // Note: NOPE! Serialize the response if it's JSON and check for errors.  If there's no json, it's an error anyhow.  But this matches on usernames and random BS.
                     if (migrationResult.Contains("error"))
                     {
                         throw new SubscriptionClientMigrationFailedException($"An error occurred while attempting to migrate subscriptions to a new WebSocket connection. The Alta API responded with a error message.{Environment.NewLine}{migrationResult}");
@@ -249,7 +264,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 logger.LogWarning($"ATTEMPTING RECOVERY FROM UNEXPECTEDLY TERMINATED CONNECTION! {DateTime.Now}");
             }
 
-            await this.RecoveryPolicy.ExecuteAsync(async () =>
+            await this.recoveryPolicy.ExecuteAsync(async () =>
                 {
                     foreach (var eventName in this.subscriptions.Keys)
                     {
