@@ -1,8 +1,9 @@
 ﻿using System.Text;
+using System.Text.Json;
 
 namespace Townsharp.Infra.Alta.Json
 {
-    public class JsonUtils
+    internal static class JsonUtils
     {
         private enum SeparatedCaseState
         {
@@ -10,6 +11,23 @@ namespace Townsharp.Infra.Alta.Json
             Lower,
             Upper,
             NewWord
+        }
+
+        public static JsonSerializerOptions DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNamingPolicy = new SnakeCaseNamingPolicy() };
+
+        public static T Deserialize<T>(string content)
+        {
+            return JsonSerializer.Deserialize<T>(content, DefaultSerializerOptions)!;
+        }
+        
+        public async static Task<T?> DeserializeAsync<T>(Stream contentStream)
+        {
+            return await JsonSerializer.DeserializeAsync<T>(contentStream, DefaultSerializerOptions)!;
+        }
+
+        public static string Serialize<T>(T content)
+        {
+            return JsonSerializer.Serialize(content, DefaultSerializerOptions)!;
         }
 
         public static string ToSnakeCase(string s) => ToSeparatedCase(s, '_');

@@ -1,6 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Runtime.Serialization;
-using System.Text.Json;
+using static Townsharp.Infra.Alta.Json.JsonUtils;
 using Townsharp.Infra.Composition;
 
 namespace Townsharp.Infra.Alta.Api
@@ -10,14 +9,12 @@ namespace Townsharp.Infra.Alta.Api
         public const string BaseAddress = "https://webapi.townshiptale.com/"; 
         
         private readonly ILogger<ApiClient> logger;
-        private readonly JsonSerializerOptions serializerOptions;
         private readonly ClientProvider botClientProvider;
         private readonly ClientProvider userClientProvider;
         
         public ApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClient> logger)
         {
             this.logger = logger;
-            this.serializerOptions = WebApiJsonSerializerOptions.Default;
             this.botClientProvider = () => httpClientFactory.CreateClient(HttpClientNames.Bot);
             this.userClientProvider = () => httpClientFactory.CreateClient(HttpClientNames.User);
         }
@@ -63,7 +60,7 @@ namespace Townsharp.Infra.Alta.Api
         {
             logger.LogDebug($"Response: {Environment.NewLine}{response}");
             response.EnsureSuccessStatusCode();
-            T? result = await JsonSerializer.DeserializeAsync<T>(response.Content.ReadAsStream(), serializerOptions);
+            T? result = await DeserializeAsync<T>(response.Content.ReadAsStream());
             return result == null ? throw new InvalidResponseException() : result;
         }
 

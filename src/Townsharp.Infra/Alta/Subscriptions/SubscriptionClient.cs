@@ -1,12 +1,11 @@
 ﻿using Microsoft.Extensions.Logging;
 using Polly;
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
 using System.Net.WebSockets;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
-using Townsharp.Infra.Alta.Api;
+using static Townsharp.Infra.Alta.Json.JsonUtils;
 using Townsharp.Infra.Alta.Api.Identity;
 using Townsharp.Infra.Alta.Configuration;
 using Websocket.Client;
@@ -264,7 +263,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                     var token = await GetMigrationToken(oldClient);
 
                     // send migration token on a new websocket!
-                    string migrationResult = await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", JsonSerializer.Serialize(new { token = token }, WebApiJsonSerializerOptions.Default)));
+                    string migrationResult = await messageRetryPolicy.ExecuteAsync(async () => await this.SendMessage(newClient, HttpMethod.Post, "migrate", Serialize(new { token = token })));
                     logger.LogDebug($"MigrationResult {migrationResult}");
 
                     // Note: NOPE! Serialize the response if it's JSON and check for errors.  If there's no json, it's an error anyhow.  But this matches on usernames and random BS.
@@ -345,17 +344,17 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 migrationTokenRequestResult = await this.SendMessage(client, HttpMethod.Get, "migrate");
                 logger.LogDebug($"Migration Request Result {migrationTokenRequestResult}");
 
-                var response = this.Deserialize<TownshipTaleResponseMessage>(migrationTokenRequestResult);
+                var response = Deserialize<TownshipTaleResponseMessage>(migrationTokenRequestResult);
                 
                 if (response.Content.Contains("token", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    var content = this.Deserialize<MigrationTokenContent>(response.Content);
+                    var content = Deserialize<MigrationTokenContent>(response.Content);
 
                     return content.Token;
                 }
                 else if (response.Content.Contains("error_code", StringComparison.InvariantCultureIgnoreCase))
                 {
-                    var content = this.Deserialize<ErrorContent>(response.Content);
+                    var content = Deserialize<ErrorContent>(response.Content);
                     logger.LogError($"An error occurred during the migration request {content.ErrorCode} - {content.Message}");
 
                     throw new AltaSubscriptionClientException(content.Message, content.ErrorCode);
@@ -433,7 +432,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
 
         private TMessage TransformGroupServerStatus<TMessage>(ResponseMessage message)
         {
-            return this.Deserialize<TMessage>(message.Text)!;
+            return Deserialize<TMessage>(message.Text)!;
         }
 
         private string ExtractEventType(ResponseMessage message)
@@ -466,16 +465,6 @@ namespace Townsharp.Infra.Alta.Subscriptions
         private void ReconnectionHappened(ReconnectionInfo reconnectionInfo)
         {
             this.logger.LogDebug($"RECONNECTED: Type-{reconnectionInfo.Type}");
-        }
-
-        private T Deserialize<T>(string content)
-        {
-            return JsonSerializer.Deserialize<T>(content, WebApiJsonSerializerOptions.Default)!;
-        }
-
-        private string Serialize<T>(T content)
-        {
-            return JsonSerializer.Serialize(content, WebApiJsonSerializerOptions.Default)!;
         }
 
         // Disposal
