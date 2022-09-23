@@ -1,17 +1,15 @@
-﻿using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Polly;
 using Townsharp;
 using Townsharp.Hosting;
 using Townsharp.Infra.Alta.Api;
-using Townsharp.Infra.Alta.Configuration;
+using Townsharp.Infra.Alta.Console;
 using Townsharp.Infra.Alta.Identity;
-using Townsharp.Infra.Alta.Subscriptions;
 using Townsharp.Infra.Composition;
 
-Console.WriteLine("Starting Townsharp WebAPI Subscription Listener!");
+Console.WriteLine("Starting Townsharp Console REPL!");
 
 var builder = Host.CreateDefaultBuilder()
     .ConfigureServices(ConfigureServices);
@@ -22,14 +20,14 @@ void ConfigureServices(HostBuilderContext context, IServiceCollection services)
 {
     IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
     services.AddTownsharp(new TownsharpConfig());
-    services.AddHostedService<SubscriptionListener>();
+    services.AddHostedService<ConsoleRepl>();
     services.AddLogging(configure =>
     {
         configure.AddConfiguration(context.Configuration.GetSection("Logging"));
-        configure.AddFile(config =>
-        {
-            config.RootPath = AppContext.BaseDirectory;
-        });
+        //configure.AddFile(config =>
+        //{
+        //    config.RootPath = AppContext.BaseDirectory;
+        //});
     });
     services.AddDistributedMemoryCache();
     services.AddClientCredentialsTokenManagement()
@@ -50,11 +48,8 @@ void ConfigureServices(HostBuilderContext context, IServiceCollection services)
     services.AddHttpClient(HttpClientNames.User, c => c.BaseAddress = new Uri(ApiClient.BaseAddress))
         .AddPolicyHandler(RetryPolicy)
         .AddClientCredentialsTokenHandler(TokenManagementNames.AccountsIssuer);
-
+    
     services.AddSingleton<ApiClient>();
     services.AddSingleton<AccountsTokenClient>();
-    services.AddSingleton<SubscriptionClient>();
-    services.AddSingleton(new AltaClientConfiguration(Environment.GetEnvironmentVariable("TOWNSHARP_TEST_CLIENTID")!));
-
-    HttpClient client = new HttpClient();
+    services.AddSingleton<ConsoleClientFactory>();
 }

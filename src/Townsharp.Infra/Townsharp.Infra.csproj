@@ -19,8 +19,4 @@
     <ProjectReference Include="..\TownsharpTale\Townsharp.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Alta\Subscriptions\Events\" />
-  </ItemGroup>
-
 </Project>

@@ -6,10 +6,10 @@ using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Text.Json;
 using static Townsharp.Infra.Alta.Json.JsonUtils;
-using Townsharp.Infra.Alta.Api.Identity;
 using Townsharp.Infra.Alta.Configuration;
 using Websocket.Client;
 using Websocket.Client.Models;
+using Townsharp.Infra.Alta.Identity;
 
 namespace Townsharp.Infra.Alta.Subscriptions
 {
@@ -44,7 +44,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // NOTE: make this public and subscribe on generics with a handler method.
         // Alternatively, may not be an appropriate type to even be emitting domain models, time to design the domain interface.
         public IObservable<GroupServerStatusMessage> GroupStatusChanged => GroupStatusChangedSubject;
-        public readonly Subject<GroupServerStatusMessage> GroupStatusChangedSubject = new Subject<GroupServerStatusMessage>();
+        private readonly Subject<GroupServerStatusMessage> GroupStatusChangedSubject = new Subject<GroupServerStatusMessage>();
 
         // NOTE: Consider switching to att-client's "disconnected/reconnected" model and push resubscription upstream into the application model.
         // !!!!!!!!!!!!!! IN FACT! THIS HELPS TOWNSHARP LOGIC TO "RESYNCHRONIZE" ASSUMED STATE FOR THINGS LIKE SERVER POPULATIONS. THIS IS HELPFUL! !!!!!!!!!!!!!!!!
@@ -212,7 +212,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
 
             var id = this.messageId++;
-            TownshipTaleRequestMessage message = new TownshipTaleRequestMessage(id, method, path, this.authToken!, content);
+            SubscriptionRequestMessage message = new SubscriptionRequestMessage(id, method, path, this.authToken!, content);
             this.logger.LogDebug(message.ToString());
 
             // Prepare to receive single response.
@@ -344,7 +344,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 migrationTokenRequestResult = await this.SendMessage(client, HttpMethod.Get, "migrate");
                 logger.LogDebug($"Migration Request Result {migrationTokenRequestResult}");
 
-                var response = Deserialize<TownshipTaleResponseMessage>(migrationTokenRequestResult);
+                var response = Deserialize<SubscriptionResponseMessage>(migrationTokenRequestResult);
                 
                 if (response.Content.Contains("token", StringComparison.InvariantCultureIgnoreCase))
                 {
@@ -412,6 +412,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // Message Subscription Management
         private bool IsResponseMessageForId(ResponseMessage message, int id)
         {
+            // NOTE: serialize this...
             var jsonMessage = JsonDocument.Parse(message.Text);
             if (jsonMessage.RootElement.TryGetProperty("event", out var @event))
             {
@@ -488,11 +489,11 @@ namespace Townsharp.Infra.Alta.Subscriptions
         }
 
         // Internal Types
-        private record TownshipTaleRequestMessage
+        private record SubscriptionRequestMessage
         {
             private readonly bool obfuscateContent;
 
-            public TownshipTaleRequestMessage(int id, HttpMethod method, string path, string token, string content = "", bool obfuscateContent = true)
+            public SubscriptionRequestMessage(int id, HttpMethod method, string path, string token, string content = "", bool obfuscateContent = true)
             {
                 Id = id;
                 Method = method.Method;
@@ -525,7 +526,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
             }
         }
 
-        private record TownshipTaleResponseMessage
+        private record SubscriptionResponseMessage
         {
             public int Id { get; init; }
 

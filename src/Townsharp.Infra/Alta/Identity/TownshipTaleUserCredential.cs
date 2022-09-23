@@ -1,4 +1,4 @@
-﻿namespace Townsharp.Infra.Alta.Api.Identity
+﻿namespace Townsharp.Infra.Alta.Identity
 {
     public class TownshipTaleUserCredential
     {

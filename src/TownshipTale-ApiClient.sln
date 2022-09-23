@@ -48,6 +48,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Subscriptions", "Subscripti
 		..\docs\Subscriptions\Overview.md = ..\docs\Subscriptions\Overview.md
 	EndProjectSection
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Townsharp.ConsoleRepl", "Townsharp.ConsoleRepl\Townsharp.ConsoleRepl.csproj", "{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -102,6 +104,10 @@ Global
 		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82}.Release|Any CPU.Build.0 = Release|Any CPU
+		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -120,6 +126,7 @@ Global
 		{EF44220E-26FA-40DB-9F39-0C68A9DC056E} = {B98E5FC7-5F3B-427A-979D-B146398E1166}
 		{996B48D1-DCC4-4C7E-98C9-78E2AED04A82} = {2DE93603-00CE-4CF7-8E1A-D495551C84F6}
 		{A107E9BA-E718-4226-BC6F-E12C0F24070B} = {557934AD-B270-46E6-90B6-DB1B616EFCB0}
+		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA} = {2EFAFEAC-41B1-485C-95AE-E6F8C307CB3E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C02D4807-D069-4868-AA91-ECF877998A5F}

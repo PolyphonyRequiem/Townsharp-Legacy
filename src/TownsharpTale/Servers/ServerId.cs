@@ -14,5 +14,10 @@
 
         public static implicit operator long(ServerId serverId)
             => serverId.id;
+
+        public override string ToString()
+        {
+            return id.ToString();
+        }
     }
 }
