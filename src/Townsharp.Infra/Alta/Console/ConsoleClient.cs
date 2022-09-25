@@ -62,7 +62,7 @@ namespace Townsharp.Infra.Alta.Console
         {
             var result = await this.SendCommand(this.client!, commandString);
 
-            return result.Data.ToString();
+            return result.Data?.ToString() ?? String.Empty;
         }
 
         //private async Task SendSubscriptionRequest(WebsocketClient client, string eventname, string key)
@@ -118,7 +118,7 @@ namespace Townsharp.Infra.Alta.Console
             return client;
         }
 
-        private async Task<ConsoleCommandResponseMessage> SendCommand(WebsocketClient client, string commandString)
+        private async Task<ConsoleCommandResultMessage> SendCommand(WebsocketClient client, string commandString)
         {
             var id = this.messageId++;
             var request = new ConsoleCommandRequestMessage(id, commandString);
@@ -126,7 +126,7 @@ namespace Townsharp.Infra.Alta.Console
             this.logger.LogDebug($"Sending {request}");
 
             // Prepare to receive single response.
-            TaskCompletionSource<ConsoleCommandResponseMessage> tcs = new TaskCompletionSource<ConsoleCommandResponseMessage>();
+            TaskCompletionSource<ConsoleCommandResultMessage> tcs = new TaskCompletionSource<ConsoleCommandResultMessage>();
 
             client
                 .MessageReceived
@@ -137,7 +137,7 @@ namespace Townsharp.Infra.Alta.Console
                 {
                     try
                     {
-                        ConsoleCommandResponseMessage commandResponse = Deserialize<ConsoleCommandResponseMessage>(response.Text);
+                        ConsoleCommandResultMessage commandResponse = Deserialize<ConsoleCommandResultMessage>(response.Text);
                         this.logger.LogDebug($"Got command response for id: {id}.{Environment.NewLine}{commandResponse}");
                         tcs.SetResult(commandResponse);
                     }
@@ -163,9 +163,9 @@ namespace Townsharp.Infra.Alta.Console
             try
             {
                 var responseMessage = Deserialize<ConsoleResponseMessage>(response.Text);
-                if (responseMessage.Data.GetString().Contains("Connection Succeeded, Authenticated as:"))
+                if (responseMessage.Data?.RootElement.ToString().Contains("Connection Succeeded, Authenticated as:") ?? false)
                 {
-                    logger.LogInformation($"Successfully authenticated to console for server {this.serverId}. {responseMessage.Data}");
+                    logger.LogInformation($"Successfully authenticated to console for server {this.serverId}. {responseMessage.Data.RootElement.ToString()}");
                     return true;
                 }
 
@@ -247,14 +247,17 @@ namespace Townsharp.Infra.Alta.Console
 
             public DateTime TimeStamp { get; init; } = DateTime.MinValue;
 
-            //public string EventType { get; init; } = String.Empty;
-
-            public dynamic Data { get; init; } = String.Empty;
+            public JsonDocument? Data { get; init; } = default;
         }
 
-        private record ConsoleCommandResponseMessage : ConsoleResponseMessage
+        private record ConsoleCommandResultMessage : ConsoleResponseMessage
         {
-            public int? Id { get; init; }
+            public int CommandId { get; init; }
+        }
+
+        private record ConsoleSystemMessage : ConsoleResponseMessage
+        {
+            public string EventType { get; init; } = String.Empty;
         }
 
         private record ConsoleCommandRequestMessage
