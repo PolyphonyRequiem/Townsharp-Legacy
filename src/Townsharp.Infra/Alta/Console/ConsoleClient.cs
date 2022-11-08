@@ -16,7 +16,7 @@ namespace Townsharp.Infra.Alta.Console
         public readonly static TimeSpan ResponseTimeout = TimeSpan.FromSeconds(15);
 
         // Transient Fault Handling
-        public readonly AsyncPolicy<string> messageRetryPolicy;
+        private readonly AsyncPolicy<string> messageRetryPolicy;
 
         // Dependencies
         private readonly ILogger<ConsoleClient> logger;
