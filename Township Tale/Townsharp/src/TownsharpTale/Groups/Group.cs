@@ -8,7 +8,7 @@ namespace Townsharp.Groups
 
         public string Name { get; init; }
 
-        public string Description { get; init; }
+        public string Description { get; init; } = string.Empty;
 
         public int LastMemberCount { get; private set; }
 
