@@ -12,16 +12,9 @@
             this.serverUpdateProvider.SubscribeForStatusUpdates(Apply);
         }
 
-        public Task<ServerConnection> Connect()
-        {
-            throw new NotImplementedException();
-        }
-
         public ServerId ServerId { get; }
 
         public ServerStatus ServerStatus { get; }
-
-        public ServerConnection ServerConnection { get; }
 
         protected void Apply(ServerStatusUpdate update)
         {

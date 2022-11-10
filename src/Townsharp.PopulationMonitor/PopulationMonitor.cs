@@ -6,13 +6,15 @@ using Townsharp.Infra.Alta.Console;
 
 public class PopulationMonitor : IHostedService
 {
+    private readonly ConsoleManager consoleManager;
     private readonly ConsoleClientFactory consoleClientFactory;
     private readonly ILogger<PopulationMonitor> logger;
 
     private readonly Dictionary<long, ConsoleClient> KnownConsoles = new Dictionary<long, ConsoleClient>();
 
-    public PopulationMonitor(ConsoleClientFactory clientfactory, ILogger<PopulationMonitor> logger)
+    public PopulationMonitor(ConsoleManager consoleManager, ConsoleClientFactory clientfactory, ILogger<PopulationMonitor> logger)
     {
+        this.consoleManager = consoleManager;
         this.consoleClientFactory = clientfactory;
         this.logger = logger;
     }

@@ -20,5 +20,6 @@ void ConfigureServices(HostBuilderContext context, IServiceCollection services)
         configure.AddConfiguration(context.Configuration.GetSection("Logging"));
     });
 
+    services.AddSingleton<ConsoleManager>();
     services.AddSingleton<ConsoleClientFactory>();
 }
