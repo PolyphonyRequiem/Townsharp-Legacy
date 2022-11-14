@@ -70,6 +70,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // NOTE: consider capturing operation contexts functionally to prevent state mangling
         // (meta note, I'm not sure what I meant here, probably applies to a different method than Connect.)
         // I think I'm trying to say we need a "run with context" kind of mechanism.  I don't think we do.  Probably delete these comments in cleanup.
+        // We -may- however be able to get away from Connect being needed...
         public async Task Connect()
         {
             if (this.state != State.Disconnected)

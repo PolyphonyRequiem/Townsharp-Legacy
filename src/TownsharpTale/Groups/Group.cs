@@ -24,9 +24,16 @@ namespace Townsharp.Groups
 
         GroupRole[] Roles { get; init; }
 
-        public Group(GroupId id, string name, string description, int memberCount, DateTime createdAt, string type, List<string> tags, List<Server> servers, int allowedServerCount, GroupRole[] roles)
+        public Group(GroupId id, string name)
         {
-
+            this.Id = id;
+            this.Name = name;
         }
+
+        // groups can be in a few states at least:
+        // Forbidden
+        // Doesn't exist (404)
+        // Accessible
+        // Any difference between invited and joined?  Get help investigating that and record it.
     }
 }

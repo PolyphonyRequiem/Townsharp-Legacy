@@ -1,6 +1,7 @@
 ﻿namespace Townsharp.Servers
 {
-    public class ServerStatusUpdate
+    public record struct ServerStatusUpdate
     {
+        public ServerStatus NewStatus { get; init; }
     }
 }
