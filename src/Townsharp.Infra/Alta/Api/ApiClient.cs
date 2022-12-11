@@ -6,12 +6,12 @@ namespace Townsharp.Infra.Alta.Api
 {
     public class ApiClient
     {
-        public const string BaseAddress = "https://webapi.townshiptale.com/"; 
-        
+        public const string BaseAddress = "https://webapi.townshiptale.com/";
+
         private readonly ILogger<ApiClient> logger;
         private readonly ClientProvider botClientProvider;
         private readonly ClientProvider userClientProvider;
-        
+
         public ApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClient> logger)
         {
             this.logger = logger;

@@ -21,7 +21,6 @@ public class SubscriptionListener : IHostedService
         this.logger = logger;
         this.subscriptionClient = subscriptionClient;
         this.apiClient = apiClient;
-        this.session.SessionReady += OnSessionReady;
 
         //ActivitySource.AddActivityListener(new ActivityListener()
         //{
@@ -30,11 +29,6 @@ public class SubscriptionListener : IHostedService
         //    ActivityStarted = activity => Console.WriteLine("Started: {0,-15} {1,-60}", activity.OperationName, activity.Id),
         //    ActivityStopped = activity => Console.WriteLine("Stopped: {0,-15} {1,-60} {2,-15}", activity.OperationName, activity.Id, activity.Duration)
         //});
-    }
-
-    private void OnSessionReady(SessionReadyEvent obj)
-    {
-        logger.LogInformation("Session Ready!");
     }
 
     public async Task StartAsync(CancellationToken cancellationToken)

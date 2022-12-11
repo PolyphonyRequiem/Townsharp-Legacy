@@ -1,7 +1,6 @@
 ﻿namespace Townsharp.Subscriptions
 {
-    public class Subscription
+    public class SubscriptionsManager
     {
-       
     }
 }

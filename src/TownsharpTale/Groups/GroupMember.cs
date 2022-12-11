@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Groups
 {
-    public class PendingGroupInvite
+    public class GroupMember
     {
     }
 }

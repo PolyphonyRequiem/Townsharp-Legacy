@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Servers
 {
-    public class ServerStatus
+    public class ServerStatusChangedEvent
     {
     }
 }

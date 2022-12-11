@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Servers
 {
-    public class ServerConnection
+    public class ServerPlayersChangedEvent
     {
     }
 }

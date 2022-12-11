@@ -6,27 +6,19 @@ namespace Townsharp.Groups
     {
         public GroupId Id { get; init; }
 
-        public string Name { get; init; }
-
-        public string Description { get; init; } = string.Empty;
-
-        public int LastMemberCount { get; private set; }
-
-        public DateTime CreatedAt { get; init; }
-
-        string Type { get; init; }
-
-        string[] Tags { get; init; }
-
-        Server[] Servers { get; init; }
-
-        int AllowedServerCount { get; init; }
-
-        GroupRole[] Roles { get; init; }
-
-        public Group(GroupId id, string name, string description, int memberCount, DateTime createdAt, string type, List<string> tags, List<Server> servers, int allowedServerCount, GroupRole[] roles)
+        public GroupsManager GroupManager { get; init; }
+               
+        protected Group(GroupId id, GroupsManager groupManager)
         {
-
+            this.Id = id;
+            GroupManager = groupManager;
         }
+
+        // groups can be in a few states at least:
+        // Forbidden
+        // Doesn't exist (404)
+        // Accessible
+        // Any difference between invited and joined?  Get help investigating that and record it.
+        // Might need a state field here, possibly with "As" methods to promote the view if aligned (this can be extended by the implementation factories)
     }
 }

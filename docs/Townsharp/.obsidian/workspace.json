@@ -1,0 +1,156 @@
+{
+  "main": {
+    "id": "994379cd2276bd3e",
+    "type": "split",
+    "children": [
+      {
+        "id": "1a8534df17b1da6e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "a10f3df105d94283",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Domain Entities.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "751e8a7beacb5f64",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Untitled.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          }
+        ],
+        "currentTab": 1
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "74ef713fb46bf870",
+    "type": "split",
+    "children": [
+      {
+        "id": "695f845fa2abb7b6",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "64d071bc038c4d82",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "b6bcaaf60cd63301",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              }
+            }
+          },
+          {
+            "id": "db575df8ba6d5afe",
+            "type": "leaf",
+            "state": {
+              "type": "starred",
+              "state": {}
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "c78277aff271db30",
+    "type": "split",
+    "children": [
+      {
+        "id": "65125533463d7b0f",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "1515c74715930211",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "Townsharp Model/Untitled.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "16c32cfddaa4ca64",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "Townsharp Model/Untitled.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              }
+            }
+          },
+          {
+            "id": "96a715de0faad19c",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true
+              }
+            }
+          },
+          {
+            "id": "af5ba3cf866f1f0d",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "Townsharp Model/Untitled.md"
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "active": "751e8a7beacb5f64",
+  "lastOpenFiles": [
+    "Townsharp Model/Domain Entities.md",
+    "Townsharp Model/Untitled.md"
+  ]
+}
