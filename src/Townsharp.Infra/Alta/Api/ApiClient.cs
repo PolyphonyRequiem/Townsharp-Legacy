@@ -1,10 +1,14 @@
 ﻿using Microsoft.Extensions.Logging;
 using static Townsharp.Infra.Alta.Json.JsonUtils;
 using Townsharp.Infra.Composition;
+using Townsharp.Api;
+using Townsharp.Groups;
+using Townsharp.Servers;
+using Townsharp.Users;
 
 namespace Townsharp.Infra.Alta.Api
 {
-    public class ApiClient
+    public class ApiClient : IApiClient
     {
         public const string BaseAddress = "https://webapi.townshiptale.com/";
 
@@ -20,19 +24,19 @@ namespace Townsharp.Infra.Alta.Api
         }
 
         // throws 400 if the invite has already been accepted
-        public Task<GroupMemberInfo> AcceptGroupInvite(long groupId) => PostAsBot<GroupMemberInfo>($"api/groups/invites/{groupId}", $"{groupId}");
+        public Task<GroupMemberInfo> AcceptGroupInvite(GroupId groupId) => PostAsBot<GroupMemberInfo>($"api/groups/invites/{groupId}", $"{groupId}");
 
-        public Task<GroupInfo> GetGroupInfo(long groupId) => GetAsBot<GroupInfo>($"api/groups/{groupId}");
+        public Task<GroupInfo> GetGroupInfo(GroupId groupId) => GetAsBot<GroupInfo>($"api/groups/{groupId}");
 
-        public Task<GroupMemberInfo> GetGroupMember(long groupId, long userId) => GetAsBot<GroupMemberInfo>($"api/groups/{groupId}/members/{userId}");
+        public Task<GroupMemberInfo> GetGroupMember(GroupId groupId, UserId userId) => GetAsBot<GroupMemberInfo>($"api/groups/{groupId}/members/{userId}");
 
         public Task<JoinedGroupInfo[]> GetJoinedGroups() => GetAsBot<JoinedGroupInfo[]>($"api/groups/joined?limit=1000");
 
         public Task<InvitedGroupInfo[]> GetPendingGroupInvites() => GetAsBot<InvitedGroupInfo[]>($"api/groups/invites?limit=1000");
 
-        public Task<ServerConnectionInfo> GetServerConnectionInfo(long serverId) => PostAsBot<ServerConnectionInfo>($"api/servers/{serverId}/console", "{\"should_launch\":true, \"ignore_offline\":true}");
+        public Task<ConsoleSessionInfo> GetConsoleInfo(ServerId serverId) => PostAsBot<ConsoleSessionInfo>($"api/servers/{serverId}/console", "{\"should_launch\":true, \"ignore_offline\":true}");
 
-        public Task<ServerInfo> GetServerInfo(long serverId) => GetAsBot<ServerInfo>($"api/servers/{serverId}");
+        public Task<ServerInfo> GetServerInfo(ServerId serverId) => GetAsBot<ServerInfo>($"api/servers/{serverId}");
 
         private Task<T> GetAsUser<T>(string path) => Get<T>(this.userClientProvider, path);
 

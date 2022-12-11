@@ -5,36 +5,37 @@ using Townsharp.Subscriptions;
 
 namespace Townsharp
 {
+    // NOTE: Session is a service implementation in DDD jargon, not an aggregate root.
     public class Session
     {
         private readonly TownsharpConfig config;
-        private readonly GroupsManager groupsManager;
-        private readonly ServersManager serversManager;
-        private readonly SubscriptionsManager subscriptionsManager;
-        private readonly ConsoleSessionsManager consoleSessionsManager;
+        private readonly GroupManager groupManager;
+        private readonly ServerManager serverManager;
+        private readonly SubscriptionManager subscriptionManager;
+        private readonly ConsoleSessionManager consoleSessionManager;
 
         public Session(
             TownsharpConfig config, 
-            GroupsManager groupsManager, 
-            ServersManager serversManager, 
-            SubscriptionsManager subscriptionsManager, 
-            ConsoleSessionsManager consoleSessionsManager)
+            GroupManager groupsManager, 
+            ServerManager serversManager, 
+            SubscriptionManager subscriptionsManager, 
+            ConsoleSessionManager consoleSessionsManager)
         {
             this.config = config;
-            this.groupsManager = groupsManager;
-            this.serversManager = serversManager;
-            this.subscriptionsManager = subscriptionsManager;
-            this.consoleSessionsManager = consoleSessionsManager;
+            this.groupManager = groupsManager;
+            this.serverManager = serversManager;
+            this.subscriptionManager = subscriptionsManager;
+            this.consoleSessionManager = consoleSessionsManager;
         }
 
         public Task<Server> GetServer(ServerId serverId)
         {
-            return this.serversManager.GetServer(serverId);
+            return this.serverManager.GetServer(serverId);
         }
 
         public async Task<Dictionary<ServerId, Server>> GetJoinedServersMap()
         {
-            var joinedServerIds = await this.serversManager.GetJoinedServerIds();
+            var joinedServerIds = await this.serverManager.GetJoinedServerIds();
 
             // NOTE : DESIGN ERROR
             // TODO : ARCH
@@ -42,7 +43,7 @@ namespace Townsharp
             var joinedServersMap = joinedServerIds
                 .AsEnumerable()
                 .AsParallel()
-                .ToDictionary(id => id, id => this.serversManager.GetServer(id).Result);
+                .ToDictionary(id => id, id => this.serverManager.GetServer(id).Result);
 
             return joinedServersMap;
         }

@@ -16,13 +16,13 @@ public class ConsoleClientFactory
 
 	public async Task<ConsoleClient> CreateClient(ServerId serverId)
 	{
-		var serverConnectionInfo = await this.apiClient.GetServerConnectionInfo(serverId);
+		var consoleInfo = await this.apiClient.GetConsoleInfo(serverId);
 
-		if (serverConnectionInfo.Connection == null)
+		if (consoleInfo.Connection == null)
 		{
 			throw new InvalidOperationException("Server is not available to take connections.");
 		}
 
-		return new ConsoleClient(serverId, new Uri($"ws://{serverConnectionInfo.Connection.Address}:{serverConnectionInfo.Connection.WebsocketPort}"), serverConnectionInfo.Token, this.loggerFactory.CreateLogger<ConsoleClient>(), _ => throw new InvalidOperationException("Disconnected!"));
+		return new ConsoleClient(serverId, new Uri($"ws://{consoleInfo.Connection.Address}:{consoleInfo.Connection.WebsocketPort}"), consoleInfo.Token, this.loggerFactory.CreateLogger<ConsoleClient>(), _ => throw new InvalidOperationException("Disconnected!"));
 	}
 }

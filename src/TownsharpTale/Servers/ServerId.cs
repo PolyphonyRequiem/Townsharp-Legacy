@@ -12,6 +12,9 @@
         public static implicit operator ServerId(long id)
             => new ServerId(id);
 
+        public static implicit operator ServerId(int id)
+            => new ServerId((long)id);
+
         public static implicit operator long(ServerId serverId)
             => serverId.id;
 

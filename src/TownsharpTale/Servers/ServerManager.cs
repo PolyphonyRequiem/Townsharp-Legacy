@@ -1,24 +1,28 @@
-﻿using Townsharp.Infra.Alta.Api;
-using Townsharp.Servers;
+﻿using Townsharp.Api;
 
-namespace Townsharp.Infra
+namespace Townsharp.Servers
 {
-    public class AltaServersManager : ServersManager
+    public class ServerManager
     {
-        private readonly ApiClient apiClient;
+        private readonly IApiClient apiClient;
 
-        public AltaServersManager(
-            ApiClient apiClient
-            // ServerFactory ?
+        // Concept of "managed" is still fuzzy here, define in the ubiquitous language in obsidian at some point please.
+        private readonly Dictionary<ServerId, Server> KnownServers = new Dictionary<ServerId, Server>();
+        private readonly Dictionary<ServerId, Server> ManagedServers = new Dictionary<ServerId, Server>();
+
+        public ServerManager(
+            IApiClient apiClient
+            // and notification sources, probably an interface?
             )
         {
             this.apiClient = apiClient;
         }
 
-        public async override Task<ServerId[]> GetJoinedServerIds()
+
+        public async Task<ServerId[]> GetJoinedServerIds()
         {
             var joinedGroups = await apiClient.GetJoinedGroups();
-            
+
             var joinedServerIds = joinedGroups
                 .Select(joinedGroup => joinedGroup.Group)
                 .SelectMany(group => group.Servers)
@@ -28,7 +32,7 @@ namespace Townsharp.Infra
             return joinedServerIds;
         }
 
-        public async override Task<Server> GetServer(ServerId id)
+        public async Task<Server> GetServer(ServerId id)
         {
             // This logic seems like a universal invariant, and should likely be abstracted into ServersManager.
             if (this.ManagedServers.ContainsKey(id))
@@ -40,7 +44,7 @@ namespace Townsharp.Infra
             var serverInfo = await this.apiClient.GetServerInfo(id);
 
             // clearly needs a factory
-            return new AltaServer(id, this, this.apiClient, serverInfo.IsOnline);
+            return new Server(id, this.apiClient);
         }
     }
 }

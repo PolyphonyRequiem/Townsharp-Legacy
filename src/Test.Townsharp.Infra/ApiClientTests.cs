@@ -21,7 +21,7 @@ namespace Test.Townsharp.Infra
         [Fact]
         public async Task GetServerConnectionInfoTest()
         {
-            var serverConnectionInfo = await this.apiClient.GetServerConnectionInfo(1174503463);
+            var serverConnectionInfo = await this.apiClient.GetConsoleInfo(1174503463);
             Assert.True(serverConnectionInfo.ServerId == 1174503463);
         }
 

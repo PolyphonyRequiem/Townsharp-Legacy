@@ -6,9 +6,9 @@ namespace Townsharp.Groups
     {
         public GroupId Id { get; init; }
 
-        public GroupsManager GroupManager { get; init; }
+        public GroupManager GroupManager { get; init; }
                
-        protected Group(GroupId id, GroupsManager groupManager)
+        protected Group(GroupId id, GroupManager groupManager)
         {
             this.Id = id;
             GroupManager = groupManager;

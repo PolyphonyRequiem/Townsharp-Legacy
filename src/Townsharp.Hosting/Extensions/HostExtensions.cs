@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
+using Townsharp.Api;
 using Townsharp.Consoles;
 using Townsharp.Groups;
 using Townsharp.Infra;
@@ -24,14 +25,12 @@ namespace Townsharp.Hosting
         {
             IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
 
-            // Bind Townsharp.Infa to Townsharp Domain
-
-            serviceCollection.AddTransient<GroupsManager, AltaGroupsManager>();
-            serviceCollection.AddTransient<ServersManager, AltaServersManager>();
-            serviceCollection.AddTransient<SubscriptionsManager, AltaSubscriptionsManager>();
-            serviceCollection.AddTransient<ConsoleSessionsManager, AltaConsoleSessionsManager>();
-
             serviceCollection.AddSingleton<Session>();
+            serviceCollection.AddSingleton<GroupManager>();
+            serviceCollection.AddSingleton<ServerManager>();
+            serviceCollection.AddSingleton<ConsoleSessionManager>();
+            serviceCollection.AddSingleton<SubscriptionManager>();
+
             serviceCollection.AddSingleton(config);
             serviceCollection.AddDistributedMemoryCache();
             serviceCollection.AddClientCredentialsTokenManagement()
@@ -53,7 +52,7 @@ namespace Townsharp.Hosting
                 .AddPolicyHandler(RetryPolicy)
                 .AddClientCredentialsTokenHandler(TokenManagementNames.AccountsIssuer);
 
-            serviceCollection.AddSingleton<ApiClient>();
+            serviceCollection.AddSingleton<IApiClient, ApiClient>();
             serviceCollection.AddSingleton<AccountsTokenClient>();
             serviceCollection.AddSingleton<SubscriptionClient>();
             serviceCollection.AddSingleton(new AltaClientConfiguration(Environment.GetEnvironmentVariable("TOWNSHARP_TEST_CLIENTID")!));

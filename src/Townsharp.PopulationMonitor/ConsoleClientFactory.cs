@@ -16,7 +16,7 @@ public class ConsoleClientFactory
 
 	public async Task<ConsoleClient> CreateClient(ServerId serverId)
 	{
-		var serverConnectionInfo = await this.apiClient.GetServerConnectionInfo(serverId);
+		var serverConnectionInfo = await this.apiClient.GetConsoleInfo(serverId);
 
 		if (serverConnectionInfo.Connection == null)
 		{
