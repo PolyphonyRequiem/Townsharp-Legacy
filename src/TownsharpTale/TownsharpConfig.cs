@@ -6,5 +6,9 @@
         {
 
         }
+
+        public int MaxDegreeOfParallelism { get; set; } = 4;
+
+        public static TownsharpConfig Default { get; set; } = new TownsharpConfig();
     }
 }

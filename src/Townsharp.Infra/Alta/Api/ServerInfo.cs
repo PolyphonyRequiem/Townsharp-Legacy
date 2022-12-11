@@ -20,5 +20,6 @@
         string Type,
         string JoinType,
         ServerFleet ServerFleet,
-        TimeSpan UpTime);
+        TimeSpan UpTime,
+        bool IsOnline);
 }

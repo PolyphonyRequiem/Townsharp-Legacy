@@ -1,15 +1,20 @@
 ﻿namespace Townsharp.Servers
 {
-    public class Server
+    // State pattern may still make sense here, with "Server" as the context object, and "ConnectedServer" etc. as a state object example
+    public abstract class Server
     {
-        protected Server(ServerId serverId, ServerStatus serverStatus)
+        protected Server(ServerId id, ServersManager serverManager)
         {
-            this.ServerId = serverId;
-            this.ServerStatus = serverStatus;
+            this.Id = id;
+            this.ServersManager = serverManager;
         }
 
-        public ServerId ServerId { get; }
+        protected internal ServersManager ServersManager { get; init; }
 
-        public ServerStatus ServerStatus { get; set; }06
+        public bool IsOnline { get; set; }
+
+        public ServerId Id { get; init; }
+
+        public abstract Task<Player[]> GetCurrentPlayers();
     }
 }

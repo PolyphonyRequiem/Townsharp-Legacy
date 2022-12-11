@@ -7,9 +7,9 @@ namespace Test.Townsharp
         [Fact]
         public async Task TestServerFabrication()
         {
-            var session = new Session(TestConfig.DefaultConfig);
+            //var session = new Session(TestConfig.DefaultConfig);
 
-            await session.Start();
+            //await session.Start();
         }
     }
 }

@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Linq;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Console;
 using Townsharp.Infra.Alta.Subscriptions;
@@ -27,10 +26,11 @@ public class ConsoleManager
 
     public async Task<bool> AddManagedConsole(ServerId serverId)
     {
+        throw new NotImplementedException();
         // verify that we can add a managed console for this particular server.
         // if we haven't already added it...
         // we should probably make sure this is thread safe. queued intent?
-        if (this.managedConsoles.Contains(serverId))
+        if (this.managedConsoles.ContainsKey(serverId))
         {
             this.logger.LogWarning($"Managed console registration already exists for {serverId}.");
             return true;
@@ -84,18 +84,19 @@ public class ConsoleManager
     // var commandresult = session.WithConsole(serverId)
     //                            .RunCommand(somecommand)
     public async Task<ManagedConsoleResult<TResult>> WithConsole<TResult>(ServerId serverId, Func<ConsoleClient, TResult> consoleAction)
-    { 
+    {
+        throw new NotImplementedException();
         // if we... I forgot what I was saying here.  Time to sleep.
     }
+}
 
-    private enum ManagedConsoleStatus
-    {
-        Uninitialized,
-        Connected,
-        Error,
-        ServerDisconnected,
-        ServerRestarting
-    }
+public enum ManagedConsoleStatus
+{
+    Uninitialized,
+    Connected,
+    Error,
+    ServerDisconnected,
+    ServerRestarting
 }
 
 // META NOTE: I need to figure out the lifecycle here.  Maybe whiteboard it tomorrow morning?

@@ -1,27 +1,50 @@
-﻿using System.Collections.ObjectModel;
+﻿using Townsharp.Consoles;
 using Townsharp.Groups;
 using Townsharp.Servers;
+using Townsharp.Subscriptions;
 
 namespace Townsharp
 {
     public class Session
     {
         private readonly TownsharpConfig config;
-        private readonly IGroupsManager groupsManager;
-        private readonly IServerManager serverManager;
+        private readonly GroupsManager groupsManager;
+        private readonly ServersManager serversManager;
+        private readonly SubscriptionsManager subscriptionsManager;
+        private readonly ConsoleSessionsManager consoleSessionsManager;
 
-        public Session(TownsharpConfig config, IGroupsManager groupsManager, IServerManager serverManager)
+        public Session(
+            TownsharpConfig config, 
+            GroupsManager groupsManager, 
+            ServersManager serversManager, 
+            SubscriptionsManager subscriptionsManager, 
+            ConsoleSessionsManager consoleSessionsManager)
         {
             this.config = config;
             this.groupsManager = groupsManager;
-            this.serverManager = serverManager;
+            this.serversManager = serversManager;
+            this.subscriptionsManager = subscriptionsManager;
+            this.consoleSessionsManager = consoleSessionsManager;
         }
 
-        public ReadOnlyDictionary<GroupId, Group> JoinedGroups => this.groupsManager.GetJoinedGroups();
-
-        public Task<Server> ManageServer(ServerId serverId)
+        public Task<Server> GetServer(ServerId serverId)
         {
-            return this.serverManager.RegisterServerForManagement(serverId);
+            return this.serversManager.GetServer(serverId);
+        }
+
+        public async Task<Dictionary<ServerId, Server>> GetJoinedServersMap()
+        {
+            var joinedServerIds = await this.serversManager.GetJoinedServerIds();
+
+            // NOTE : DESIGN ERROR
+            // TODO : ARCH
+            // This may be the WRONG asynchronous pattern and will QUICKLY end up throttled, fix this before moving into any scalability tests.
+            var joinedServersMap = joinedServerIds
+                .AsEnumerable()
+                .AsParallel()
+                .ToDictionary(id => id, id => this.serversManager.GetServer(id).Result);
+
+            return joinedServersMap;
         }
 
         // get notified on invitations

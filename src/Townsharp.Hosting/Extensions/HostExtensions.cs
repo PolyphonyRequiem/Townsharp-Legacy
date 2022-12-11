@@ -1,18 +1,35 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
+using Townsharp.Consoles;
+using Townsharp.Groups;
+using Townsharp.Infra;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Configuration;
 using Townsharp.Infra.Alta.Identity;
 using Townsharp.Infra.Alta.Subscriptions;
 using Townsharp.Infra.Composition;
+using Townsharp.Servers;
+using Townsharp.Subscriptions;
 
 namespace Townsharp.Hosting
 {
     public static class ServiceCollectionExtensions
     {
+        public static IServiceCollection AddTownsharp(this IServiceCollection serviceCollection)
+        {
+            return serviceCollection.AddTownsharp(TownsharpConfig.Default);
+        }
+
         public static IServiceCollection AddTownsharp(this IServiceCollection serviceCollection, TownsharpConfig config)
         {
             IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
+
+            // Bind Townsharp.Infa to Townsharp Domain
+
+            serviceCollection.AddTransient<GroupsManager, AltaGroupsManager>();
+            serviceCollection.AddTransient<ServersManager, AltaServersManager>();
+            serviceCollection.AddTransient<SubscriptionsManager, AltaSubscriptionsManager>();
+            serviceCollection.AddTransient<ConsoleSessionsManager, AltaConsoleSessionsManager>();
 
             serviceCollection.AddSingleton<Session>();
             serviceCollection.AddSingleton(config);
