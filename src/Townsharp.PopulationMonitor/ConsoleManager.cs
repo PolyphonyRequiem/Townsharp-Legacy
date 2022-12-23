@@ -3,6 +3,7 @@ using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Console;
 using Townsharp.Infra.Alta.Subscriptions;
 using Townsharp.Servers;
+using Townsharp.Subscriptions;
 
 public class ConsoleManager
 {
@@ -67,12 +68,12 @@ public class ConsoleManager
         {
             await this.subscriptionClient.Connect();
 
-            this.subscriptionClient.GroupStatusChanged.Subscribe(GroupStatusUpdatedEventHandler);
+            this.subscriptionClient.ServerStatusChanged.Subscribe(GroupStatusUpdatedEventHandler);
             this.subscriptionClientConnected = true;
         }
     }
 
-    private void GroupStatusUpdatedEventHandler(GroupServerStatusMessage message)
+    private void GroupStatusUpdatedEventHandler(ServerStatusChangedEvent message)
     {
         // If a server came online, and we've lost console session, we should reconnect it.
     }

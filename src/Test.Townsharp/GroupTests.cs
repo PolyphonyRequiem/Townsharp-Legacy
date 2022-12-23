@@ -14,6 +14,7 @@ namespace Test.Townsharp
         [Fact]
         public async Task SessionCanProvideJoinedGroupsInfo()
         {
+            throw new NotImplementedException();
         }
     }
 }

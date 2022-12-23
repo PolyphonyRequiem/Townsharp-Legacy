@@ -1,4 +1,5 @@
-﻿using Townsharp.Groups;
+﻿using Townsharp.Consoles;
+using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Users;
 
@@ -6,18 +7,18 @@ namespace Townsharp.Api
 {
     public interface IApiClient
     {
-        public Task<GroupMemberInfo> AcceptGroupInvite(GroupId groupId);
+        public Task<GroupDescription> GetGroup(GroupId groupId);
 
-        public Task<GroupInfo> GetGroupInfo(GroupId groupId);
+        public IAsyncEnumerable<GroupDescription> GetJoinedGroups();
 
-        public Task<GroupMemberInfo> GetGroupMember(GroupId groupId, UserId userId);
+        public IAsyncEnumerable<GroupDescription> GetPendingGroupInvitations();
 
-        public Task<JoinedGroupInfo[]> GetJoinedGroups();
+        public Task<bool> AcceptGroupInvite(GroupId groupId);
 
-        public Task<InvitedGroupInfo[]> GetPendingGroupInvites();
+        public Task<GroupMemberDescription> GetGroupMember(GroupId groupId, UserId userId);
 
-        public Task<ConsoleSessionInfo> GetConsoleInfo(ServerId serverId);
+        public Task<ServerDescription> GetServerDescriptor(ServerId serverId);
 
-        public Task<ServerInfo> GetServerInfo(ServerId serverId);
+        public Task<ConsoleAccessResult> RequestConsoleAccess(ServerId serverId);
     }
 }

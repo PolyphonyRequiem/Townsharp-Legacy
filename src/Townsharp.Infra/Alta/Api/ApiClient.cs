@@ -5,68 +5,163 @@ using Townsharp.Api;
 using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Users;
+using System.Net.Http.Json;
+using Townsharp.Consoles;
 
 namespace Townsharp.Infra.Alta.Api
 {
     public class ApiClient : IApiClient
     {
+        public const int Limit = 100;
         public const string BaseAddress = "https://webapi.townshiptale.com/";
 
         private readonly ILogger<ApiClient> logger;
-        private readonly ClientProvider botClientProvider;
-        private readonly ClientProvider userClientProvider;
+        private readonly ClientProvider getBotHttpClient;
+        private readonly ClientProvider getUserHttpClient;
 
         public ApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClient> logger)
         {
             this.logger = logger;
-            this.botClientProvider = () => httpClientFactory.CreateClient(HttpClientNames.Bot);
-            this.userClientProvider = () => httpClientFactory.CreateClient(HttpClientNames.User);
+            this.getBotHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.Bot);
+            this.getUserHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.User);
+        }
+
+        // Allow client type to be specified where possible, User, Bot, Auto.
+        public async Task<GroupDescription> GetGroup(GroupId groupId)
+        {
+            var groupInfo = (await getBotHttpClient().GetFromJsonAsync<GroupInfo>($"api/groups/{groupId}"))!;
+            return groupInfo.MapToGroupDescriptor();
+        }
+
+        public async IAsyncEnumerable<GroupDescription> GetJoinedGroups()
+        {
+            HttpClient client = getBotHttpClient();
+            HttpResponseMessage response;
+            string lastPaginationToken = string.Empty;
+
+            do
+            {
+                var message = lastPaginationToken != string.Empty ?
+                    new HttpRequestMessage(HttpMethod.Get, $"api/groups/joined?limit={Limit}&paginationToken={lastPaginationToken}") :
+                    new HttpRequestMessage(HttpMethod.Get, $"api/groups/joined?limit={Limit}");
+                    
+                response = await client.SendAsync(message);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                    throw new InvalidResponseException(errorResponse.ToString());
+                }
+
+                lastPaginationToken = response.Headers.Contains("paginationToken") ?
+                    response.Headers.GetValues("paginationToken").First() :
+                    String.Empty;
+
+                foreach (var joinedGroup in await response.Content.ReadFromJsonAsync<JoinedGroupInfo[]>(DefaultSerializerOptions) ?? new JoinedGroupInfo[0])
+                {
+                    yield return joinedGroup.Group.MapToGroupDescriptor();
+                }
+            }
+            while (response.Headers.Contains("paginationToken"));            
+        }
+
+        public async IAsyncEnumerable<GroupDescription> GetPendingGroupInvitations()
+        {
+            HttpClient client = getBotHttpClient();
+            HttpResponseMessage response;
+            string lastPaginationToken = string.Empty;
+
+            do
+            {
+                var message = lastPaginationToken != string.Empty ?
+                    new HttpRequestMessage(HttpMethod.Get, $"api/groups/invites?limit={Limit}&paginationToken={lastPaginationToken}") :
+                    new HttpRequestMessage(HttpMethod.Get, $"api/groups/invites?limit={Limit}");
+
+                response = await client.SendAsync(message);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                    throw new InvalidResponseException(errorResponse.ToString());
+                }
+
+                if (response.Headers.Contains("paginationToken"))
+                {
+                    lastPaginationToken = response.Headers.GetValues("paginationToken").First();
+                }
+
+                foreach (var invitedGroup in await response.Content.ReadFromJsonAsync<InvitedGroupInfo[]>(DefaultSerializerOptions) ?? new InvitedGroupInfo[0])
+                {
+                    yield return invitedGroup.MapToGroupDescriptor();
+                }
+            }
+            while (response.Headers.Contains("paginationToken"));
         }
 
         // throws 400 if the invite has already been accepted
-        public Task<GroupMemberInfo> AcceptGroupInvite(GroupId groupId) => PostAsBot<GroupMemberInfo>($"api/groups/invites/{groupId}", $"{groupId}");
-
-        public Task<GroupInfo> GetGroupInfo(GroupId groupId) => GetAsBot<GroupInfo>($"api/groups/{groupId}");
-
-        public Task<GroupMemberInfo> GetGroupMember(GroupId groupId, UserId userId) => GetAsBot<GroupMemberInfo>($"api/groups/{groupId}/members/{userId}");
-
-        public Task<JoinedGroupInfo[]> GetJoinedGroups() => GetAsBot<JoinedGroupInfo[]>($"api/groups/joined?limit=1000");
-
-        public Task<InvitedGroupInfo[]> GetPendingGroupInvites() => GetAsBot<InvitedGroupInfo[]>($"api/groups/invites?limit=1000");
-
-        public Task<ConsoleSessionInfo> GetConsoleInfo(ServerId serverId) => PostAsBot<ConsoleSessionInfo>($"api/servers/{serverId}/console", "{\"should_launch\":true, \"ignore_offline\":true}");
-
-        public Task<ServerInfo> GetServerInfo(ServerId serverId) => GetAsBot<ServerInfo>($"api/servers/{serverId}");
-
-        private Task<T> GetAsUser<T>(string path) => Get<T>(this.userClientProvider, path);
-
-        private Task<T> GetAsBot<T>(string path) => Get<T>(this.botClientProvider, path);
-
-        private async Task<T> Get<T>(ClientProvider clientProvider, string path)
+        public async Task<bool> AcceptGroupInvite(GroupId groupId)
         {
-            logger.LogDebug($"Requesting {path}");
-            var response = await clientProvider.Invoke().GetAsync(path);
-            return await EnsureSuccessAndSerializeResponse<T>(response);
+            HttpClient client = getBotHttpClient();
+            var response = await client.PostAsync($"api/groups/invites/{groupId}", new StringContent(groupId.ToString()));
+            return response.IsSuccessStatusCode;
         }
 
-        private Task<T> PostAsUser<T>(string path, string body = "") => Post<T>(this.userClientProvider, path, body);
-
-        private Task<T> PostAsBot<T>(string path, string body = "") => Post<T>(this.botClientProvider, path, body);
-
-        private async Task<T> Post<T>(ClientProvider clientProvider, string path, string body = "")
+        public async Task<GroupMemberDescription> GetGroupMember(GroupId groupId, UserId userId)
         {
-            logger.LogDebug($"Requesting {path}");
-            var response = await clientProvider.Invoke().PostAsync(path, new StringContent(body));
-            return await EnsureSuccessAndSerializeResponse<T>(response);
+            HttpClient client = getBotHttpClient();
+            var response = await client.GetAsync($"api/groups/{groupId}/members/{userId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                throw new InvalidResponseException(errorResponse.ToString());
+            }
+
+            var groupMember = await response.Content.ReadFromJsonAsync<GroupMemberInfo>(DefaultSerializerOptions);
+
+            return groupMember!.MapToMemberDescriptor();
         }
 
-        private async Task<T> EnsureSuccessAndSerializeResponse<T>(HttpResponseMessage response)
+        public async Task<ServerDescription> GetServerDescriptor(ServerId serverId)
         {
-            logger.LogDebug($"Response: {Environment.NewLine}{response}");
-            response.EnsureSuccessStatusCode();
-            T? result = await DeserializeAsync<T>(response.Content.ReadAsStream());
-            return result == null ? throw new InvalidResponseException() : result;
+            HttpClient client = getBotHttpClient();
+            var response = await client.GetAsync($"api/servers/{serverId}");
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                throw new InvalidResponseException(errorResponse.ToString());
+            }
+
+            var serverInfo = await response.Content.ReadFromJsonAsync<ServerInfo>(DefaultSerializerOptions);
+
+            return serverInfo!.MapToServerDescriptor();
         }
+
+        public async Task<ConsoleAccessResult> RequestConsoleAccess(ServerId serverId)
+        {
+            HttpClient client = getBotHttpClient();
+            var response = await client.PostAsync($"api/servers/{serverId}", new StringContent("{\"should_launch\":true, \"ignore_offline\":true}"));
+
+            if (!response.IsSuccessStatusCode)
+            {
+                ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                throw new InvalidResponseException(errorResponse.ToString());
+            }
+
+            var serverJoinResult = await response.Content.ReadFromJsonAsync<ServerJoinResult>(DefaultSerializerOptions);
+
+            if (!serverJoinResult?.Allowed ?? false)
+            {
+                return new ConsoleAccessResult(IsOnline: false, default, String.Empty);
+            }
+
+            var connection = serverJoinResult!.Connection!;
+
+            return new ConsoleAccessResult(IsOnline: true, new Uri($"ws://{connection.Address}:{connection.WebsocketPort}"), serverJoinResult.Token);
+        }
+
+        // NESTED TYPES
 
         private delegate HttpClient ClientProvider();
     }

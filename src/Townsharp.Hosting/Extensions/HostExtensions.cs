@@ -25,11 +25,7 @@ namespace Townsharp.Hosting
         {
             IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
 
-            serviceCollection.AddSingleton<Session>();
-            serviceCollection.AddSingleton<GroupManager>();
-            serviceCollection.AddSingleton<ServerManager>();
-            serviceCollection.AddSingleton<ConsoleSessionManager>();
-            serviceCollection.AddSingleton<SubscriptionManager>();
+            serviceCollection.AddSingleton<Session>();           
 
             serviceCollection.AddSingleton(config);
             serviceCollection.AddDistributedMemoryCache();

@@ -1,4 +1,5 @@
 ﻿using Microsoft.Extensions.Logging;
+using System.Diagnostics;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Console;
 using Townsharp.Servers;
@@ -14,15 +15,17 @@ public class ConsoleClientFactory
 		this.loggerFactory = loggerFactory;
 	}
 
-	public async Task<ConsoleClient> CreateClient(ServerId serverId)
-	{
-		var serverConnectionInfo = await this.apiClient.GetConsoleInfo(serverId);
+    public async Task<ConsoleClient> CreateClient(ServerId serverId)
+    {
+        try
+        {
+            var result = await this.apiClient.RequestConsoleAccess(serverId);
 
-		if (serverConnectionInfo.Connection == null)
-		{
-			throw new InvalidOperationException("Server is not available to take connections.");
-		}
-
-		return new ConsoleClient(serverId, new Uri($"ws://{serverConnectionInfo.Connection.Address}:{serverConnectionInfo.Connection.WebsocketPort}"), serverConnectionInfo.Token, this.loggerFactory.CreateLogger<ConsoleClient>(), _ => throw new InvalidOperationException("Disconnected!"));
-	}
+            return new ConsoleClient(serverId, result.Endpoint, result.Token, this.loggerFactory.CreateLogger<ConsoleClient>(), _ => throw new InvalidOperationException("Disconnected!"));
+        }
+        catch (ServerOfflineException e)
+        {
+            Debugger.Break();
+        }
+    }
 }

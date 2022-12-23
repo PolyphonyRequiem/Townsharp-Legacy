@@ -27,7 +27,6 @@ namespace Townsharp.Infra.Alta.Console
         private readonly string consoleToken;
 
         private WebsocketClient? client;
-        private bool disposedValue = false;
         private int messageId = 1;
         private ConcurrentDictionary<string, ConcurrentDictionary<string, bool>> subscriptions = new ConcurrentDictionary<string, ConcurrentDictionary<string, bool>>();
 

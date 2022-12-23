@@ -1,4 +1,4 @@
-﻿using Townsharp.Servers;
+﻿using System.Collections.ObjectModel;
 
 namespace Townsharp.Groups
 {
@@ -6,13 +6,42 @@ namespace Townsharp.Groups
     {
         public GroupId Id { get; init; }
 
-        public GroupManager GroupManager { get; init; }
+        public string Name { get; init; }
+
+        public string Description { get; init; }
+
+        // These are part of the aggregate's responsibility, but not strictly part of it's model.
+        //private List<Member> members;
+        
+        //public ReadOnlyCollection<Member> Members => members.AsReadOnly();
+
+        //private List<Role> roles;
+
+        //public ReadOnlyCollection<Role> Roles => roles.AsReadOnly();
+
+        //public int MemberCount { get; protected set; }
+
+        public GroupType GroupType { get; protected set; }
                
-        protected Group(GroupId id, GroupManager groupManager)
+        protected Group(
+            GroupId id,
+            string name,
+            string description,
+            GroupType groupType)
         {
             this.Id = id;
-            GroupManager = groupManager;
+            this.Name = name;
+            this.Description = description;
+            this.GroupType = groupType;
         }
+
+        public Group(GroupDescription descriptor)
+            : this(
+                  descriptor.Id,
+                  descriptor.Name,
+                  descriptor.Description,
+                  descriptor.GroupType)
+        { }
 
         // groups can be in a few states at least:
         // Forbidden
@@ -20,5 +49,12 @@ namespace Townsharp.Groups
         // Accessible
         // Any difference between invited and joined?  Get help investigating that and record it.
         // Might need a state field here, possibly with "As" methods to promote the view if aligned (this can be extended by the implementation factories)
+    }
+
+    public enum GroupType
+    {
+        Private,
+        Public,
+        Open
     }
 }

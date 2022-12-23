@@ -14,5 +14,10 @@
 
         public static implicit operator long(GroupId groupId)
             => groupId.id;
+
+        public override string ToString()
+        {
+            return this.id.ToString();
+        }
     }
 }

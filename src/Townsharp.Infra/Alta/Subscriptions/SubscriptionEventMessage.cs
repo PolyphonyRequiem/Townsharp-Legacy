@@ -6,7 +6,7 @@ using Townsharp.Infra.Alta.Json;
 
 namespace Townsharp.Infra.Alta.Subscriptions
 {
-    public abstract record SubscriptionEvent
+    internal abstract record SubscriptionEvent
     {
         protected SubscriptionEvent(int id, string @event, string key, long responseCode)
         {
@@ -16,90 +16,90 @@ namespace Townsharp.Infra.Alta.Subscriptions
             ResponseCode = responseCode;
         }
 
-        public int Id { get; init; }
+        internal int Id { get; init; }
 
-        public string Event { get; init; }
+        internal string Event { get; init; }
 
-        public string Key { get; init; }
+        internal string Key { get; init; }
 
-        public long ResponseCode { get; init; }
+        internal long ResponseCode { get; init; }
     }
 
-    public record GroupMemberUpdateMessage : SubscriptionEvent
+    internal record GroupMemberUpdateMessage : SubscriptionEvent
     {
-        public GroupMemberUpdateMessage(int id, string key, long responseCode, GroupMemberInfo content)
+        internal GroupMemberUpdateMessage(int id, string key, long responseCode, GroupMemberInfo content)
             : base(id, SubscriptionEventName.GroupMemberUpdate, key, responseCode)
         {
             Content = content;
         }
 
-        public GroupMemberInfo Content { get; init; }
+        internal GroupMemberInfo Content { get; init; }
     }
 
-    public record GroupServerStatusMessage : SubscriptionEvent
+    internal record ServerStatusMessage : SubscriptionEvent
     {
-        public GroupServerStatusMessage(int id, string key, long responseCode, ServerInfo content)
+        internal ServerStatusMessage(int id, string key, long responseCode, ServerInfo content)
             : base(id, SubscriptionEventName.GroupServerStatus, key, responseCode)
         {
             Content = content;
         }
 
         [JsonConverter(typeof(EmbeddedJsonConverter<ServerInfo>))]
-        public ServerInfo Content { get; init; }
+        internal ServerInfo Content { get; init; }
     }
 
-    public record GroupUpdateMessage : SubscriptionEvent
+    internal record GroupUpdateMessage : SubscriptionEvent
     {
-        public GroupUpdateMessage(int id, string key, long responseCode, GroupInfo content)
+        internal GroupUpdateMessage(int id, string key, long responseCode, GroupInfo content)
             : base(id, SubscriptionEventName.GroupUpdate, key, responseCode)
         {
             Content = content;
         }
 
-        public GroupInfo Content { get; init; }
+        internal GroupInfo Content { get; init; }
     }
 
-    public record MeGroupDeleteMessage : SubscriptionEvent
+    internal record MeGroupDeleteMessage : SubscriptionEvent
     {
-        public MeGroupDeleteMessage(int id, string key, long ResponseCode, (GroupInfo Group, GroupMemberInfo Member) content)
+        internal MeGroupDeleteMessage(int id, string key, long ResponseCode, (GroupInfo Group, GroupMemberInfo Member) content)
             : base(id, SubscriptionEventName.MeGroupDelete, key, ResponseCode)
         {
             Content = content;
         }
 
-        public (GroupInfo Group, GroupMemberInfo Member) Content { get; }
+        internal (GroupInfo Group, GroupMemberInfo Member) Content { get; }
     }
 
-    public record MeGroupInviteCreateMessage : SubscriptionEvent
+    internal record MeGroupInviteCreateMessage : SubscriptionEvent
     {
-        public MeGroupInviteCreateMessage(int id, string key, long responseCode, GroupInfo content)
+        internal MeGroupInviteCreateMessage(int id, string key, long responseCode, GroupInfo content)
             : base(id, SubscriptionEventName.MeGroupInviteCreate, key, responseCode)
         {
             Content = content;
         }
 
-        public GroupInfo Content { get; }
+        internal GroupInfo Content { get; }
     }
 
-    public record MeGroupInviteDeleteMessage : SubscriptionEvent
+    internal record MeGroupInviteDeleteMessage : SubscriptionEvent
     {
-        public MeGroupInviteDeleteMessage(int id, string key, long responseCode, GroupInfo content)
+        internal MeGroupInviteDeleteMessage(int id, string key, long responseCode, GroupInfo content)
             : base(id, SubscriptionEventName.MeGroupInviteDelete, key, responseCode)
         {
             Content = content;
         }
 
-        public GroupInfo Content { get; }
+        internal GroupInfo Content { get; }
     }
 
-    public record MeGroupCreateMessage : SubscriptionEvent
+    internal record MeGroupCreateMessage : SubscriptionEvent
     {
-        public MeGroupCreateMessage(int id, string key, long responseCode, GroupInfo content)
+        internal MeGroupCreateMessage(int id, string key, long responseCode, GroupInfo content)
             : base(id, SubscriptionEventName.MeGroupCreate, key, responseCode)
         {
             Content = content;
         }
 
-        public GroupInfo Content { get; }
+        internal GroupInfo Content { get; }
     }
 }

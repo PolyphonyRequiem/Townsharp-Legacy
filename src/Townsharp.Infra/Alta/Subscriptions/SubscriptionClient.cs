@@ -10,6 +10,9 @@ using Townsharp.Infra.Alta.Configuration;
 using Websocket.Client;
 using Websocket.Client.Models;
 using Townsharp.Infra.Alta.Identity;
+using Townsharp.Servers;
+using Townsharp.Subscriptions;
+using Townsharp.Groups;
 
 namespace Townsharp.Infra.Alta.Subscriptions
 {
@@ -43,8 +46,18 @@ namespace Townsharp.Infra.Alta.Subscriptions
         // Subscription Handlers
         // NOTE: make this public and subscribe on generics with a handler method.
         // Alternatively, may not be an appropriate type to even be emitting domain models, time to design the domain interface.
-        public IObservable<GroupServerStatusMessage> GroupStatusChanged => GroupStatusChangedSubject;
-        private readonly Subject<GroupServerStatusMessage> GroupStatusChangedSubject = new Subject<GroupServerStatusMessage>();
+        private readonly Subject<ServerStatusMessage> ServerStatusChangedSubject = new Subject<ServerStatusMessage>();
+
+        public IObservable<ServerStatusChangedEvent> ServerStatusChanged => ServerStatusChangedSubject.Select(TransformServerStatusChangedEvent);
+
+        private ServerStatusChangedEvent TransformServerStatusChangedEvent(ServerStatusMessage message)
+        {
+            return new ServerStatusChangedEvent(
+                new ServerId(message.Content.Id),
+                new GroupId(message.Content.GroupId),
+                message.Content.IsOnline,
+                message.Content.OnlinePlayers.Select(player => new PlayerDescription(new PlayerId(player.Id), player.Username)).ToArray());
+        }
 
         // NOTE: Consider switching to att-client's "disconnected/reconnected" model and push resubscription upstream into the application model.
         // !!!!!!!!!!!!!! IN FACT! THIS HELPS TOWNSHARP LOGIC TO "RESYNCHRONIZE" ASSUMED STATE FOR THINGS LIKE SERVER POPULATIONS. THIS IS HELPFUL! !!!!!!!!!!!!!!!!
@@ -383,8 +396,8 @@ namespace Townsharp.Infra.Alta.Subscriptions
             var groupedMessages = client.MessageReceived.GroupBy(ExtractEventType);
 
             groupedMessages.Where(grp => grp.Key == "group-server-status")
-                .SelectMany(grp => grp.Select(TransformGroupServerStatus<GroupServerStatusMessage>))
-                .Subscribe(message => this.GroupStatusChangedSubject.OnNext(message));
+                .SelectMany(grp => grp.Select(TransformGroupServerStatus<ServerStatusMessage>))
+                .Subscribe(message => this.ServerStatusChangedSubject.OnNext(message));
 
             client
                 .MessageReceived

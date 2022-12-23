@@ -1,31 +1,53 @@
-﻿using Townsharp.Api;
+﻿using Townsharp.Groups;
+using System.Reactive.Subjects;
 
 namespace Townsharp.Servers
 {
-    // State pattern may still make sense here, with "Server" as the context object, and "ConnectedServer" etc. as a state object example
     public class Server
     {
-        private readonly IApiClient apiClient;
+        public ServerId Id { get; }
 
-        protected internal Server(ServerId id, IApiClient apiClient)
+        public GroupId GroupId { get; }
+
+        public bool IsOnline { get; protected set; }
+
+        // noope, readonly collection by way of an accessor please.
+        public Player[] Players { get; protected set; }
+
+        internal Server(
+            ServerId id,
+            GroupId groupId,
+            bool isOnline,
+            Player[] players)
         {
-            this.Id = id;
-            this.apiClient = apiClient;
+            Id = id;
+            GroupId = groupId;
+            IsOnline = isOnline;
+            Players = players;
         }
 
-        public bool IsOnline => this.apiClient.GetServerInfo(Id).Result.IsOnline;
+        // NOTE: Inject service dependencies at the method invocation level, it's easier to test and makes the dependency use cases more clear.
 
-        public ServerId Id { get; init; }
-
-        public async Task<Player[]> GetCurrentPlayers()
+        protected internal void UpdateOnlineStatus(bool isOnline)
         {
-            var serverInfo = await this.apiClient.GetServerInfo(Id);
-
-            return serverInfo.IsOnline ?
-                serverInfo.OnlinePlayers
-                    .Select(player => new Player(new PlayerId(player.Id), player.Username))
-                    .ToArray() :
-                new Player[0];
+            this.IsOnline = isOnline;
+            this.onlineStatusChangedSubject.OnNext(new ServerOnlineStatusChanged(isOnline));
         }
+       
+        protected internal void UpdatePlayers(Player[] currentPlayers)
+        {
+            var oldPlayers = this.Players;
+            var playersJoined = currentPlayers.Except(oldPlayers).ToArray();
+            var playersLeft = oldPlayers.Except(currentPlayers).ToArray();
+
+            this.Players = currentPlayers;
+            this.playersChangedSubject.OnNext(new ServerPlayersChanged(currentPlayers, playersJoined, playersLeft));
+        }
+
+        protected Subject<ServerOnlineStatusChanged> onlineStatusChangedSubject = new Subject<ServerOnlineStatusChanged>();
+        protected Subject<ServerPlayersChanged> playersChangedSubject = new Subject<ServerPlayersChanged>();
+
+        public virtual IObservable<ServerOnlineStatusChanged> OnlineStatusChanged => this.onlineStatusChangedSubject;
+        public virtual IObservable<ServerPlayersChanged> PlayersChanged => this.playersChangedSubject;
     }
 }

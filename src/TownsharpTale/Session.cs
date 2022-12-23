@@ -1,51 +1,55 @@
-﻿using Townsharp.Consoles;
+﻿using System.Collections.Immutable;
+using System.Collections.ObjectModel;
+using Townsharp.Api;
+using Townsharp.Consoles;
 using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Subscriptions;
 
 namespace Townsharp
 {
-    // NOTE: Session is a service implementation in DDD jargon, not an aggregate root.
     public class Session
     {
-        private readonly TownsharpConfig config;
-        private readonly GroupManager groupManager;
-        private readonly ServerManager serverManager;
-        private readonly SubscriptionManager subscriptionManager;
-        private readonly ConsoleSessionManager consoleSessionManager;
+        private readonly Dictionary<GroupId, Group> JoinedGroups = new Dictionary<GroupId, Group>();
+        private readonly Dictionary<ServerId, Server> JoinedServers = new Dictionary<ServerId, Server>();
 
-        public Session(
-            TownsharpConfig config, 
-            GroupManager groupsManager, 
-            ServerManager serversManager, 
-            SubscriptionManager subscriptionsManager, 
-            ConsoleSessionManager consoleSessionsManager)
+        private readonly TownsharpConfig config;
+        private readonly IApiClient apiClient;
+        private readonly ISubscriptionClient subscriptionClient;
+        private readonly IConsoleClientFactory consoleClientFactory;
+
+        public Session(TownsharpConfig config,
+            IApiClient apiClient,
+            ISubscriptionClient subscriptionClient,
+            IConsoleClientFactory consoleClientFactory)
         {
             this.config = config;
-            this.groupManager = groupsManager;
-            this.serverManager = serversManager;
-            this.subscriptionManager = subscriptionsManager;
-            this.consoleSessionManager = consoleSessionsManager;
+            this.apiClient = apiClient;
+            this.subscriptionClient = subscriptionClient;
+            this.consoleClientFactory = consoleClientFactory;
         }
 
-        public Task<Server> GetServer(ServerId serverId)
+        public Task<ReadOnlyCollection<Server>> GetJoinedServers()
         {
-            return this.serverManager.GetServer(serverId);
+            return Task.FromResult(JoinedServers.Values.ToList().AsReadOnly());
         }
 
-        public async Task<Dictionary<ServerId, Server>> GetJoinedServersMap()
+        private async Task InitializeSessionAsync()
         {
-            var joinedServerIds = await this.serverManager.GetJoinedServerIds();
+            if (this.config.AutoManageJoinedGroups == true) 
+            {
+                List<Task> groupManagementInitializationTasks = new List<Task>();
+                await foreach (var joinedGroupDescriptor in this.apiClient.GetJoinedGroups())
+                {
+                    var joinedGroup = new Group(joinedGroupDescriptor);
+                    groupManagementInitializationTasks.Add(this.ManageGroup(joinedGroup));
+                }
+            }
+        }
 
-            // NOTE : DESIGN ERROR
-            // TODO : ARCH
-            // This may be the WRONG asynchronous pattern and will QUICKLY end up throttled, fix this before moving into any scalability tests.
-            var joinedServersMap = joinedServerIds
-                .AsEnumerable()
-                .AsParallel()
-                .ToDictionary(id => id, id => this.serverManager.GetServer(id).Result);
-
-            return joinedServersMap;
+        private Task ManageGroup(Group joinedGroup)
+        {
+            throw new NotImplementedException();
         }
 
         // get notified on invitations

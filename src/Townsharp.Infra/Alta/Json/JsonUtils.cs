@@ -20,11 +20,6 @@ namespace Townsharp.Infra.Alta.Json
             return JsonSerializer.Deserialize<T>(content, DefaultSerializerOptions)!;
         }
         
-        public async static Task<T?> DeserializeAsync<T>(Stream contentStream)
-        {
-            return await JsonSerializer.DeserializeAsync<T>(contentStream, DefaultSerializerOptions)!;
-        }
-
         public static string Serialize<T>(T content)
         {
             return JsonSerializer.Serialize(content, DefaultSerializerOptions)!;

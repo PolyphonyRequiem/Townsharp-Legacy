@@ -3,17 +3,17 @@
 namespace Townsharp.Infra.Alta.Subscriptions
 {
     // NOTE! Consider SourceGenerators for this?
-    public record SubscriptionEventName
+    internal record SubscriptionEventName
     {
-        public static string GroupMemberUpdate   = "group-member-update";
-        public static string GroupServerCreate   = "group-server-create";
-        public static string GroupServerDelete   = "group-server-delete";
-        public static string GroupServerStatus   = "group-server-status";
-        public static string GroupServerUpdate   = "group-server-update";
-        public static string GroupUpdate         = "group-update";
-        public static string MeGroupCreate       = "me-group-create";
-        public static string MeGroupDelete       = "me-group-delete";
-        public static string MeGroupInviteCreate = "me-group-invite-create";
-        public static string MeGroupInviteDelete = "me-group-invite-delete";
+        internal static string GroupMemberUpdate   = "group-member-update";
+        internal static string GroupServerCreate   = "group-server-create";
+        internal static string GroupServerDelete   = "group-server-delete";
+        internal static string GroupServerStatus   = "group-server-status";
+        internal static string GroupServerUpdate   = "group-server-update";
+        internal static string GroupUpdate         = "group-update";
+        internal static string MeGroupCreate       = "me-group-create";
+        internal static string MeGroupDelete       = "me-group-delete";
+        internal static string MeGroupInviteCreate = "me-group-invite-create";
+        internal static string MeGroupInviteDelete = "me-group-invite-delete";
     }
 }

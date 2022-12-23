@@ -36,20 +36,22 @@ public class SubscriptionListener : IHostedService
         this.logger.LogInformation($"Subscribing to GroupStatusChanged events");
         
         //this.subscriptionClient.GroupStatusChanged.Subscribe(message => this.logger.LogInformation(message.ToString()));
-        this.subscriptionClient.GroupStatusChanged.Subscribe(_ => this.total++);
+        this.subscriptionClient.ServerStatusChanged.Subscribe(_ => this.total++);
 
         await this.subscriptionClient.Connect();
 
         using (activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
         {
-            var joinedGroups = await this.apiClient.GetJoinedGroups();
-
             using (activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
             {
-                await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
+                await foreach (var joinedGroup in this.apiClient.GetJoinedGroups())
                 {
-                    await this.subscriptionClient.Subscribe("group-server-status", g.Group.Id.ToString());
-                });
+                    await this.subscriptionClient.Subscribe("group-server-status", joinedGroup.Id.ToString());
+                    //await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
+                    //{
+                        
+                    //})
+                };
             }
         }
 

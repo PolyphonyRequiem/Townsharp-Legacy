@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Groups
 {
-    public record GroupRole
+    public record Role
     {
         RoleId Id { get; init; }
 
@@ -12,7 +12,7 @@
 
         // string[] AllowedCommands { get; init; }
 
-        public GroupRole(RoleId id, string name, IList<string> permissions)
+        public Role(RoleId id, string name, IList<string> permissions)
         {
             Id = id;
             Name = name;

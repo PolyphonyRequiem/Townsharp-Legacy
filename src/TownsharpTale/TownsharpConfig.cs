@@ -2,13 +2,14 @@
 {
     public class TownsharpConfig
     {
-        public TownsharpConfig()
-        {
+        public int MaxDegreeOfParallelism { get; init; } = 8;
 
-        }
+        public bool AutoManageJoinedGroups { get; init; } = true;
 
-        public int MaxDegreeOfParallelism { get; set; } = 4;
+        public bool AutoManageJoinedServers { get; init; } = true;
 
-        public static TownsharpConfig Default { get; set; } = new TownsharpConfig();
+        public bool AutoJoinInvitedGroups { get; init; } = true;
+
+        public static TownsharpConfig Default = new TownsharpConfig();
     }
 }

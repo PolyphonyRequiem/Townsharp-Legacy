@@ -31,12 +31,13 @@ public class DiscordMarketplace : IHostedService
         await this.discordSocketClient.StartAsync();
 
         //var server = await session.GetServer(new ServerId(1174503463)); //Cairnbrook
-        var server = await session.GetServer(new ServerId(103278376)); // Mythic tale Quest
+        var servers = await session.GetJoinedServers();
+        var server = servers.First(s => s.Id == new ServerId(103278376)); // Mythic tale Quest
 
         if (server.IsOnline)
         {
             // Eventually do bot stuff, but for now, maybe get the player list.
-            var players = await server.GetCurrentPlayers();
+            var players = server.Players;
 
             this.logger.LogInformation($"Players Online: {string.Join(", ", players.Select(p => p.Name))}");
 

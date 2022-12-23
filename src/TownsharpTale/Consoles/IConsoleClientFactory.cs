@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Consoles
 {
-    public class ConsoleSessionManager
+    public interface IConsoleClientFactory
     {
     }
 }
