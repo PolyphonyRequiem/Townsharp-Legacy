@@ -1,5 +1,4 @@
 ﻿using Microsoft.Extensions.Logging;
-using System.Diagnostics;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Console;
 using Townsharp.Servers;

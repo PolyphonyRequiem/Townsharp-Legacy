@@ -37,7 +37,7 @@ namespace Test.Townsharp.Infra
         [Fact]
         public async Task GetJoinedGroupsTest()
         {
-            await foreach (var joinedGroup in this.apiClient.GetJoinedGroups())
+            await foreach (var joinedGroup in this.apiClient.GetJoinedGroupDescriptions())
             {
                 Assert.True(joinedGroup.Id != 0);
                 break;

@@ -35,12 +35,12 @@ namespace Townsharp.Groups
             this.GroupType = groupType;
         }
 
-        public Group(GroupDescription descriptor)
+        public Group(GroupDescription description)
             : this(
-                  descriptor.Id,
-                  descriptor.Name,
-                  descriptor.Description,
-                  descriptor.GroupType)
+                  description.Id,
+                  description.Name,
+                  description.Description,
+                  description.GroupType)
         { }
 
         // groups can be in a few states at least:

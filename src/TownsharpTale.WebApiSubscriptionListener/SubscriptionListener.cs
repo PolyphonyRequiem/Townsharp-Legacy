@@ -44,7 +44,7 @@ public class SubscriptionListener : IHostedService
         {
             using (activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
             {
-                await foreach (var joinedGroup in this.apiClient.GetJoinedGroups())
+                await foreach (var joinedGroup in this.apiClient.GetJoinedGroupDescriptions())
                 {
                     await this.subscriptionClient.Subscribe("group-server-status", joinedGroup.Id.ToString());
                     //await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>

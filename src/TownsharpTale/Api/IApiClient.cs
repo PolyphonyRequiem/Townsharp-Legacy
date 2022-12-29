@@ -7,9 +7,9 @@ namespace Townsharp.Api
 {
     public interface IApiClient
     {
-        public Task<GroupDescription> GetGroup(GroupId groupId);
+        public Task<GroupDescription> GetGroupDescription(GroupId groupId);
 
-        public IAsyncEnumerable<GroupDescription> GetJoinedGroups();
+        public IAsyncEnumerable<GroupDescription> GetJoinedGroupDescriptions();
 
         public IAsyncEnumerable<GroupDescription> GetPendingGroupInvitations();
 
@@ -17,7 +17,9 @@ namespace Townsharp.Api
 
         public Task<GroupMemberDescription> GetGroupMember(GroupId groupId, UserId userId);
 
-        public Task<ServerDescription> GetServerDescriptor(ServerId serverId);
+        public IAsyncEnumerable<ServerDescription> GetJoinedServerDescriptions();
+
+        public Task<ServerDescription> GetServerDescription(ServerId serverId);
 
         public Task<ConsoleAccessResult> RequestConsoleAccess(ServerId serverId);
     }

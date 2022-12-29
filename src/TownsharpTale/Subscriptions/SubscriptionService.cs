@@ -4,7 +4,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Townsharp.Consoles
+namespace Townsharp.Subscriptions
 {
-    public record struct ConsoleAccessResult(bool IsOnline, Uri? Endpoint, string Token);
+    public class SubscriptionService
+    {
+    }
 }

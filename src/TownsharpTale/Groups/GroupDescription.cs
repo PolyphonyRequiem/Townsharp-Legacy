@@ -1,4 +1,10 @@
-﻿namespace Townsharp.Groups
+﻿using Townsharp.Servers;
+
+namespace Townsharp.Groups
 {
-    public record GroupDescription(GroupId Id, string Name, string Description, GroupType GroupType);
+    public record struct GroupDescription(
+        GroupId Id, 
+        string Name,
+        string Description,
+        GroupType GroupType);
 }

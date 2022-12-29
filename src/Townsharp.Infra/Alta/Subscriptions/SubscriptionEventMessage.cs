@@ -1,7 +1,4 @@
 ﻿using System.Text.Json.Serialization;
-using Townsharp.Api;
-using Townsharp.Groups;
-using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Json;
 
 namespace Townsharp.Infra.Alta.Subscriptions

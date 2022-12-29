@@ -3,14 +3,14 @@
     public class Player
     {
         // NOTE:  needs to maintain entity referential integrity
-        public Player(PlayerId id, string name)
+        public Player(PlayerId id, string userName)
         {
             this.Id = id;
-            this.Name = name;
+            this.UserName = userName;
         }
 
         public PlayerId Id { get; set; }    
 
-        public string Name { get; set; }
+        public string UserName { get; set; }
     }
 }

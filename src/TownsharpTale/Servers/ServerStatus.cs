@@ -1,9 +1,4 @@
 ﻿namespace Townsharp.Servers
 {
-    public enum ServerStatus
-    {
-        Offline,
-        Online,
-        ForceOffline
-    }
+    public record struct ServerStatus(bool IsOnline, PlayerDescription[] OnlinePlayers);
 }

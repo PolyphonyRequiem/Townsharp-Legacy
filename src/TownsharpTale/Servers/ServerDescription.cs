@@ -2,7 +2,7 @@
 
 namespace Townsharp.Servers
 {
-    public record ServerDescription(
+    public record struct ServerDescription(
         ServerId Id,
         GroupId GroupId,
         string Name,

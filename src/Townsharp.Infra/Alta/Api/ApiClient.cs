@@ -27,13 +27,13 @@ namespace Townsharp.Infra.Alta.Api
         }
 
         // Allow client type to be specified where possible, User, Bot, Auto.
-        public async Task<GroupDescription> GetGroup(GroupId groupId)
+        public async Task<GroupDescription> GetGroupDescription(GroupId groupId)
         {
             var groupInfo = (await getBotHttpClient().GetFromJsonAsync<GroupInfo>($"api/groups/{groupId}"))!;
             return groupInfo.MapToGroupDescriptor();
         }
 
-        public async IAsyncEnumerable<GroupDescription> GetJoinedGroups()
+        public async IAsyncEnumerable<GroupDescription> GetJoinedGroupDescriptions()
         {
             HttpClient client = getBotHttpClient();
             HttpResponseMessage response;
@@ -122,7 +122,39 @@ namespace Townsharp.Infra.Alta.Api
             return groupMember!.MapToMemberDescriptor();
         }
 
-        public async Task<ServerDescription> GetServerDescriptor(ServerId serverId)
+        public async IAsyncEnumerable<ServerDescription> GetJoinedServerDescriptions()
+        {
+            HttpClient client = getBotHttpClient();
+            HttpResponseMessage response;
+            string lastPaginationToken = string.Empty;
+
+            do
+            {
+                var message = lastPaginationToken != string.Empty ?
+                    new HttpRequestMessage(HttpMethod.Get, $"api/servers/joined?limit={Limit}&paginationToken={lastPaginationToken}") :
+                    new HttpRequestMessage(HttpMethod.Get, $"api/servers/joined?limit={Limit}");
+
+                response = await client.SendAsync(message);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    ApiErrorResponse errorResponse = (await response.Content.ReadFromJsonAsync<ApiErrorResponse>(DefaultSerializerOptions))!;
+                    throw new InvalidResponseException(errorResponse.ToString());
+                }
+
+                lastPaginationToken = response.Headers.Contains("paginationToken") ?
+                    response.Headers.GetValues("paginationToken").First() :
+                    String.Empty;
+
+                foreach (var joinedServer in await response.Content.ReadFromJsonAsync<ServerInfo[]>(DefaultSerializerOptions) ?? new ServerInfo[0])
+                {
+                    yield return joinedServer.MapToServerDescriptor();
+                }
+            }
+            while (response.Headers.Contains("paginationToken"));
+        }
+
+        public async Task<ServerDescription> GetServerDescription(ServerId serverId)
         {
             HttpClient client = getBotHttpClient();
             var response = await client.GetAsync($"api/servers/{serverId}");

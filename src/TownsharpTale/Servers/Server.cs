@@ -1,53 +1,144 @@
-﻿using Townsharp.Groups;
-using System.Reactive.Subjects;
+﻿using System.Collections.ObjectModel;
+using Townsharp.Groups;
 
 namespace Townsharp.Servers
 {
-    public class Server
+    public sealed class Server
     {
+        private readonly Action<ServerOnlineEvent> onlineHandler;
+
+        private readonly Action<ServerOfflineEvent> offlineHandler;
+
+        private readonly Action<PlayerJoinedEvent> playerJoinedHandler;
+
+        private readonly Action<PlayerLeftEvent> playerLeftHandler;
+
+        private readonly IServerStatusProvider serverStatusProvider;
+
         public ServerId Id { get; }
 
         public GroupId GroupId { get; }
 
-        public bool IsOnline { get; protected set; }
+        public string Name { get; }
 
-        // noope, readonly collection by way of an accessor please.
-        public Player[] Players { get; protected set; }
+        public string Description { get; private set; }
+
+        public string Region { get; }
+
+        private bool isOnline { get; } = false;
+
+        private List<Player> lastOnlinePlayers = new List<Player>();
+
+        // this is VERY inefficient, cache this and invalidate it if the players change.
+        public ReadOnlyDictionary<PlayerId, Player> Players => lastOnlinePlayers.ToDictionary(p => p.Id, p => p).AsReadOnly();
 
         internal Server(
-            ServerId id,
-            GroupId groupId,
-            bool isOnline,
-            Player[] players)
+            ServerDescription description,
+            Action<ServerOnlineEvent> onlineHandler,
+            Action<ServerOfflineEvent> offlineHandler,
+            Action<PlayerJoinedEvent> playerJoinedHandler,
+            Action<PlayerLeftEvent> playerLeftHandler,
+            IServerStatusProvider serverStatusProvider)
         {
-            Id = id;
-            GroupId = groupId;
-            IsOnline = isOnline;
-            Players = players;
+            this.Id = description.Id;
+            this.GroupId = description.GroupId;
+            this.Name = description.Name;
+            this.Description = description.Description;
+            this.Region = description.Region;
+
+            this.onlineHandler = onlineHandler;
+            this.offlineHandler = offlineHandler;
+            this.playerJoinedHandler = playerJoinedHandler;
+            this.playerLeftHandler = playerLeftHandler;
+
+            this.serverStatusProvider = serverStatusProvider;
         }
 
-        // NOTE: Inject service dependencies at the method invocation level, it's easier to test and makes the dependency use cases more clear.
-
-        protected internal void UpdateOnlineStatus(bool isOnline)
+        internal static async Task<Server> CreateManagedServerAsync(
+            ServerDescription description,
+            Action<ServerOnlineEvent> onlineHandler,
+            Action<ServerOfflineEvent> offlineHandler,
+            Action<PlayerJoinedEvent> playerJoinedHandler,
+            Action<PlayerLeftEvent> playerLeftHandler,
+            IServerStatusProvider serverStatusProvider)
         {
-            this.IsOnline = isOnline;
-            this.onlineStatusChangedSubject.OnNext(new ServerOnlineStatusChanged(isOnline));
+            var server = new Server(
+                description,
+                onlineHandler,
+                offlineHandler,
+                playerJoinedHandler,
+                playerLeftHandler,
+                serverStatusProvider);
+
+            await server.StartManagementAsync();
+
+            return server;
         }
-       
-        protected internal void UpdatePlayers(Player[] currentPlayers)
+
+        public async Task RefreshStatus()
         {
-            var oldPlayers = this.Players;
-            var playersJoined = currentPlayers.Except(oldPlayers).ToArray();
-            var playersLeft = oldPlayers.Except(currentPlayers).ToArray();
+            var status = await this.serverStatusProvider.GetStatusAsync();
 
-            this.Players = currentPlayers;
-            this.playersChangedSubject.OnNext(new ServerPlayersChanged(currentPlayers, playersJoined, playersLeft));
+            HandleStatusChange(status);
         }
 
-        protected Subject<ServerOnlineStatusChanged> onlineStatusChangedSubject = new Subject<ServerOnlineStatusChanged>();
-        protected Subject<ServerPlayersChanged> playersChangedSubject = new Subject<ServerPlayersChanged>();
+        private async Task StartManagementAsync()
+        {
+            this.serverStatusProvider.RegisterStatusChangeHandler(HandleStatusChange);
+            await RefreshStatus();
+        }
+        
+        private void HandleStatusChange(ServerStatus status)
+        {
+            var currentPlayerIds = this.lastOnlinePlayers.Select(p => p.Id);
+            var updatedPlayerIds = status.OnlinePlayers.Select(p => p.Id);
 
-        public virtual IObservable<ServerOnlineStatusChanged> OnlineStatusChanged => this.onlineStatusChangedSubject;
-        public virtual IObservable<ServerPlayersChanged> PlayersChanged => this.playersChangedSubject;
+            if (!updatedPlayerIds.SequenceEqual(currentPlayerIds))
+            {
+                // handle players changed.
+                var playersJoinedIds = updatedPlayerIds.Except(currentPlayerIds).ToArray();
+                var playersLeftIds = currentPlayerIds.Except(updatedPlayerIds).ToArray();
+
+                var lastKnownPlayersMap = this.lastOnlinePlayers.ToDictionary(p => p.Id, p => p);
+
+                foreach (var leavingPlayerId in playersLeftIds)
+                {
+                    var leavingPlayer = lastKnownPlayersMap[leavingPlayerId];
+                    lastOnlinePlayers.Remove(leavingPlayer);
+                    this.playerLeftHandler.Invoke(new PlayerLeftEvent(leavingPlayer));
+                }
+
+                var onlinePlayersMap = status.OnlinePlayers.ToDictionary(p => p.Id, p => p);
+
+                foreach (var joiningPlayerId in playersJoinedIds)
+                {
+                    var joiningPlayer = new Player(joiningPlayerId, onlinePlayersMap[joiningPlayerId].UserName);
+                    lastOnlinePlayers.Add(joiningPlayer);
+                    this.playerJoinedHandler.Invoke(new PlayerJoinedEvent(joiningPlayer));
+                }
+            }
+
+            if (status.IsOnline != this.isOnline)
+            {
+                // handle online status changed.
+                if (status.IsOnline)
+                {
+                    this.onlineHandler(new ServerOnlineEvent());
+                }
+                else
+                {
+                    this.offlineHandler(new ServerOfflineEvent());
+                }
+            }
+        }
+
+        public async Task<bool> CheckIsServerOnlineAsync() => await this.serverStatusProvider.CheckIsServerOnlineAsync();
+
+        public async Task<PlayerDescription[]> GetCurrentPlayerDescriptionsAsync() => await this.serverStatusProvider.GetCurrentPlayerDescriptionsAsync();
+
+        public record struct ServerOnlineEvent();
+        public record struct ServerOfflineEvent();
+        public record struct PlayerJoinedEvent(Player JoiningPlayer);
+        public record struct PlayerLeftEvent(Player LeavingPlayer);
     }
 }

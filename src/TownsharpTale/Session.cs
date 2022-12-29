@@ -8,44 +8,69 @@ using Townsharp.Subscriptions;
 
 namespace Townsharp
 {
+
+    // only place we can "make" groups and server objects.  Also manages console sessions and subscription events.
+    // public class Session(GroupManager, ServerManager, ConsoleSessionService, SubscriptionService)
+
+    // made by the GroupManager, is given a IGroupStatusProvider at creation.
+    // public class Group(IGroupStatusProvider, Session)
+
+    // made by the ServerManager, is given a IServerStatusProvider at creation.
+    // public class Server(IServerStatusProvider, Session) 
+
+    // made by (and accessed through) the ConsoleSessionService.  Dies when disconnected for any reason, and the ConsoleSessionService may yield new ConsoleSessions when the console reconnects
+    // public class ConsoleSession(Server)
+
+    // gets you access to groups and servers, and provides management over consoles and subscriptions.
     public class Session
     {
-        private readonly Dictionary<GroupId, Group> JoinedGroups = new Dictionary<GroupId, Group>();
-        private readonly Dictionary<ServerId, Server> JoinedServers = new Dictionary<ServerId, Server>();
-
         private readonly TownsharpConfig config;
-        private readonly IApiClient apiClient;
-        private readonly ISubscriptionClient subscriptionClient;
-        private readonly IConsoleClientFactory consoleClientFactory;
+        private readonly SubscriptionService subscriptionService;
+        private readonly ConsoleSessionService consoleSessionService;
 
-        public Session(TownsharpConfig config,
-            IApiClient apiClient,
-            ISubscriptionClient subscriptionClient,
-            IConsoleClientFactory consoleClientFactory)
+        protected internal Session(
+            TownsharpConfig config,
+            IGroupStatusProvider groupStatusProvider,
+            IServerStatusProvider serverStatusProvider,
+            SubscriptionService subscriptionService,
+            ConsoleSessionService consoleSessionService)
         {
             this.config = config;
-            this.apiClient = apiClient;
-            this.subscriptionClient = subscriptionClient;
-            this.consoleClientFactory = consoleClientFactory;
+            this.subscriptionService = subscriptionService;
+            this.consoleSessionService = consoleSessionService;
         }
 
-        public Task<ReadOnlyCollection<Server>> GetJoinedServers()
+        internal static Session Connect(
+            TownsharpConfig config,
+            IGroupStatusProvider groupStatusProvider,
+            IServerStatusProvider serverStatusProvider,
+            SubscriptionService subscriptionService,
+            ConsoleSessionService consoleSessionService)
+            // Add room here for event handlers.
         {
-            return Task.FromResult(JoinedServers.Values.ToList().AsReadOnly());
+            var session = new Session(
+                config,
+                groupStatusProvider,
+                serverStatusProvider,
+                subscriptionService,
+                consoleSessionService);
+
+            session.Initialize();
+
+            return session;
         }
 
-        private async Task InitializeSessionAsync()
+        private void Initialize()
         {
             if (this.config.AutoManageJoinedGroups == true) 
             {
-                List<Task> groupManagementInitializationTasks = new List<Task>();
-                await foreach (var joinedGroupDescriptor in this.apiClient.GetJoinedGroups())
-                {
-                    var joinedGroup = new Group(joinedGroupDescriptor);
-                    groupManagementInitializationTasks.Add(this.ManageGroup(joinedGroup));
-                }
+                GroupDescription[] groupDescriptions = this.GetJoinedGroupDescriptions();
+
+                this.ManageManyGroups(groupDescriptions);
             }
         }
+
+        protected abstract GroupDescription[] GetJoinedGroupDescriptions();
 
         private Task ManageGroup(Group joinedGroup)
         {
