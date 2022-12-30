@@ -1,7 +1,4 @@
-﻿using System.Collections.Immutable;
-using System.Collections.ObjectModel;
-using Townsharp.Api;
-using Townsharp.Consoles;
+﻿using Townsharp.Consoles;
 using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Subscriptions;
@@ -25,25 +22,29 @@ namespace Townsharp
     public class Session
     {
         private readonly TownsharpConfig config;
+        private readonly GroupManager groupManager;
+        private readonly ServerManager serverManager;
         private readonly SubscriptionService subscriptionService;
         private readonly ConsoleSessionService consoleSessionService;
 
         protected internal Session(
             TownsharpConfig config,
-            IGroupStatusProvider groupStatusProvider,
-            IServerStatusProvider serverStatusProvider,
+            GroupManager groupManager,
+            ServerManager serverManager,
             SubscriptionService subscriptionService,
             ConsoleSessionService consoleSessionService)
         {
             this.config = config;
+            this.groupManager = groupManager;
+            this.serverManager = serverManager;
             this.subscriptionService = subscriptionService;
             this.consoleSessionService = consoleSessionService;
         }
 
         internal static Session Connect(
             TownsharpConfig config,
-            IGroupStatusProvider groupStatusProvider,
-            IServerStatusProvider serverStatusProvider,
+            GroupManager groupStatusProvider,
+            ServerManager serverStatusProvider,
             SubscriptionService subscriptionService,
             ConsoleSessionService consoleSessionService)
             // Add room here for event handlers.
@@ -60,21 +61,22 @@ namespace Townsharp
             return session;
         }
 
+        public async Task<Server[]> GetJoinedServersAsync()
+        {
+            return await this.serverManager.GetJoinedServersAsync();
+        }
+
+        public async Task<Server> GetServerAsync(ServerId serverId)
+        {
+            return await this.serverManager.GetServerAsync(serverId);
+        }
+
         private void Initialize()
         {
             if (this.config.AutoManageJoinedGroups == true) 
             {
-                GroupDescription[] groupDescriptions = this.GetJoinedGroupDescriptions();
-
-                this.ManageManyGroups(groupDescriptions);
+                
             }
-        }
-
-        protected abstract GroupDescription[] GetJoinedGroupDescriptions();
-
-        private Task ManageGroup(Group joinedGroup)
-        {
-            throw new NotImplementedException();
         }
 
         // get notified on invitations

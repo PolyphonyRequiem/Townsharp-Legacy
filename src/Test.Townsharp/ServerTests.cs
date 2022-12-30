@@ -1,6 +1,7 @@
 using Moq;
-using Townsharp.Api;
 using Townsharp.Consoles;
+using Townsharp.Groups;
+using Townsharp.Servers;
 using Townsharp.Subscriptions;
 
 namespace Test.Townsharp
@@ -10,18 +11,17 @@ namespace Test.Townsharp
         [Fact]
         public async Task TestServerFabrication()
         {
-            var mockApiClient = new Mock<IApiClient>();
-            var mockSubscriptionClient = new Mock<ISubscriptionClient>();
-            var mockConsoleClientFactory = new Mock<IConsoleClientFactory>();
+            var testServerId = 1;
+            var sessionFactory = new TestSessionFactory(
+                ()=>new Mock<GroupManager>().Object,
+                ()=>new Mock<ServerManager>().Object,
+                ()=>new Mock<SubscriptionService>().Object,
+                ()=>new Mock<ConsoleSessionService>().Object);
 
-            var session = new Session(
-                TestConfig.DefaultConfig, 
-                mockApiClient.Object, 
-                mockSubscriptionClient.Object, 
-                mockConsoleClientFactory.Object );
+            var session = sessionFactory.CreateConnectedSession(TestConfig.DefaultConfig);
 
-            var joinedServers = await session.GetJoinedServers();
-            Assert.True(joinedServers.First().IsOnline);
+            var joinedServers = await session.GetJoinedServersAsync();
+            Assert.True(joinedServers.First().Id == testServerId);
         }
     }
 }

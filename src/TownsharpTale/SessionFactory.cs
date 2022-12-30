@@ -7,19 +7,19 @@ namespace Townsharp
 {
     public class SessionFactory
     {
-        private readonly Func<IGroupStatusProvider> groupStatusProviderFactory;
-        private readonly Func<IServerStatusProvider> serverStatusProviderFactory;
+        private readonly Func<GroupManager> groupManagerFactory;
+        private readonly Func<ServerManager> serverManagerFactory;
         private readonly Func<SubscriptionService> subscriptionServiceFactory;
         private readonly Func<ConsoleSessionService> consoleSessionServiceFactory;
 
         protected SessionFactory(
-            Func<IGroupStatusProvider> groupStatusProviderFactory,
-            Func<IServerStatusProvider> serverStatusProviderFactory,
+            Func<GroupManager> groupManagerFactory,
+            Func<ServerManager> serverManagerFactory,
             Func<SubscriptionService> subscriptionServiceFactory,
             Func<ConsoleSessionService> consoleSessionServiceFactory) 
         {
-            this.groupStatusProviderFactory = groupStatusProviderFactory;
-            this.serverStatusProviderFactory = serverStatusProviderFactory;
+            this.groupManagerFactory = groupManagerFactory;
+            this.serverManagerFactory = serverManagerFactory;
             this.subscriptionServiceFactory = subscriptionServiceFactory;
             this.consoleSessionServiceFactory = consoleSessionServiceFactory;
         }
@@ -28,8 +28,8 @@ namespace Townsharp
         {
             return Session.Connect(
                 config,
-                groupStatusProviderFactory(),
-                serverStatusProviderFactory(),
+                groupManagerFactory(),
+                serverManagerFactory(),
                 subscriptionServiceFactory(),
                 consoleSessionServiceFactory());
         }

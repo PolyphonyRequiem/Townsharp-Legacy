@@ -54,7 +54,7 @@ namespace Townsharp.Servers
             this.serverStatusProvider = serverStatusProvider;
         }
 
-        internal static async Task<Server> CreateManagedServerAsync(
+        internal static Server CreateServer(
             ServerDescription description,
             Action<ServerOnlineEvent> onlineHandler,
             Action<ServerOfflineEvent> offlineHandler,
@@ -70,8 +70,6 @@ namespace Townsharp.Servers
                 playerLeftHandler,
                 serverStatusProvider);
 
-            await server.StartManagementAsync();
-
             return server;
         }
 
@@ -82,7 +80,7 @@ namespace Townsharp.Servers
             HandleStatusChange(status);
         }
 
-        private async Task StartManagementAsync()
+        public async Task StartManagementAsync()
         {
             this.serverStatusProvider.RegisterStatusChangeHandler(HandleStatusChange);
             await RefreshStatus();
@@ -137,8 +135,11 @@ namespace Townsharp.Servers
         public async Task<PlayerDescription[]> GetCurrentPlayerDescriptionsAsync() => await this.serverStatusProvider.GetCurrentPlayerDescriptionsAsync();
 
         public record struct ServerOnlineEvent();
+
         public record struct ServerOfflineEvent();
+
         public record struct PlayerJoinedEvent(Player JoiningPlayer);
+
         public record struct PlayerLeftEvent(Player LeavingPlayer);
     }
 }
