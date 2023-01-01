@@ -1,37 +1,19 @@
-﻿using Townsharp.Consoles;
-using Townsharp.Groups;
-using Townsharp.Servers;
-using Townsharp.Subscriptions;
-
-namespace Townsharp
+﻿namespace Townsharp
 {
-    public class SessionFactory
+    public class SessionFactory<TSession>
+        where TSession : Session
     {
-        private readonly Func<GroupManager> groupManagerFactory;
-        private readonly Func<ServerManager> serverManagerFactory;
-        private readonly Func<SubscriptionService> subscriptionServiceFactory;
-        private readonly Func<ConsoleSessionService> consoleSessionServiceFactory;
+        private readonly Func<TownsharpConfig, TSession> createSession;
 
-        protected SessionFactory(
-            Func<GroupManager> groupManagerFactory,
-            Func<ServerManager> serverManagerFactory,
-            Func<SubscriptionService> subscriptionServiceFactory,
-            Func<ConsoleSessionService> consoleSessionServiceFactory) 
+        public SessionFactory(Func<TownsharpConfig, TSession> createSession) 
         {
-            this.groupManagerFactory = groupManagerFactory;
-            this.serverManagerFactory = serverManagerFactory;
-            this.subscriptionServiceFactory = subscriptionServiceFactory;
-            this.consoleSessionServiceFactory = consoleSessionServiceFactory;
+            this.createSession = createSession;
         }
 
-        public Session CreateConnectedSession(TownsharpConfig config)
+        public Session Create(
+            TownsharpConfig config)
         {
-            return Session.Connect(
-                config,
-                groupManagerFactory(),
-                serverManagerFactory(),
-                subscriptionServiceFactory(),
-                consoleSessionServiceFactory());
+            return createSession(config);
         }
     }
 }

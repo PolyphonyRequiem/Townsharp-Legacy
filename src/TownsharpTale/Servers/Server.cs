@@ -6,14 +6,12 @@ namespace Townsharp.Servers
     public sealed class Server
     {
         private readonly Action<ServerOnlineEvent> onlineHandler;
-
         private readonly Action<ServerOfflineEvent> offlineHandler;
-
         private readonly Action<PlayerJoinedEvent> playerJoinedHandler;
-
         private readonly Action<PlayerLeftEvent> playerLeftHandler;
-
         private readonly IServerStatusProvider serverStatusProvider;
+        private bool isOnline = false;
+        private List<Player> lastOnlinePlayers = new List<Player>();
 
         public ServerId Id { get; }
 
@@ -25,14 +23,10 @@ namespace Townsharp.Servers
 
         public string Region { get; }
 
-        private bool isOnline { get; } = false;
-
-        private List<Player> lastOnlinePlayers = new List<Player>();
-
         // this is VERY inefficient, cache this and invalidate it if the players change.
         public ReadOnlyDictionary<PlayerId, Player> Players => lastOnlinePlayers.ToDictionary(p => p.Id, p => p).AsReadOnly();
 
-        internal Server(
+        private Server(
             ServerDescription description,
             Action<ServerOnlineEvent> onlineHandler,
             Action<ServerOfflineEvent> offlineHandler,
@@ -54,7 +48,7 @@ namespace Townsharp.Servers
             this.serverStatusProvider = serverStatusProvider;
         }
 
-        internal static Server CreateServer(
+        internal static async Task<Server> CreateServerAsync(
             ServerDescription description,
             Action<ServerOnlineEvent> onlineHandler,
             Action<ServerOfflineEvent> offlineHandler,
@@ -70,17 +64,21 @@ namespace Townsharp.Servers
                 playerLeftHandler,
                 serverStatusProvider);
 
+            await server.StartManagementAsync();
+
             return server;
         }
+        public async Task<bool> CheckIsServerOnlineAsync() => await this.serverStatusProvider.CheckIsServerOnlineAsync();
+
+        public async Task<PlayerDescription[]> GetCurrentPlayerDescriptionsAsync() => await this.serverStatusProvider.GetCurrentPlayerDescriptionsAsync();
 
         public async Task RefreshStatus()
         {
             var status = await this.serverStatusProvider.GetStatusAsync();
-
             HandleStatusChange(status);
         }
 
-        public async Task StartManagementAsync()
+        private async Task StartManagementAsync()
         {
             this.serverStatusProvider.RegisterStatusChangeHandler(HandleStatusChange);
             await RefreshStatus();
@@ -129,10 +127,6 @@ namespace Townsharp.Servers
                 }
             }
         }
-
-        public async Task<bool> CheckIsServerOnlineAsync() => await this.serverStatusProvider.CheckIsServerOnlineAsync();
-
-        public async Task<PlayerDescription[]> GetCurrentPlayerDescriptionsAsync() => await this.serverStatusProvider.GetCurrentPlayerDescriptionsAsync();
 
         public record struct ServerOnlineEvent();
 

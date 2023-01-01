@@ -1,7 +1,6 @@
 ﻿using Microsoft.Extensions.Logging;
 using static Townsharp.Infra.Alta.Json.JsonUtils;
 using Townsharp.Infra.Composition;
-using Townsharp.Api;
 using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Users;
@@ -10,7 +9,7 @@ using Townsharp.Consoles;
 
 namespace Townsharp.Infra.Alta.Api
 {
-    public class ApiClient : IApiClient
+    public class ApiClient
     {
         public const int Limit = 100;
         public const string BaseAddress = "https://webapi.townshiptale.com/";

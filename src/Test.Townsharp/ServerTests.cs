@@ -12,15 +12,12 @@ namespace Test.Townsharp
         public async Task TestServerFabrication()
         {
             var testServerId = 1;
-            var sessionFactory = new TestSessionFactory(
-                ()=>new Mock<GroupManager>().Object,
-                ()=>new Mock<ServerManager>().Object,
-                ()=>new Mock<SubscriptionService>().Object,
-                ()=>new Mock<ConsoleSessionService>().Object);
+            var sessionFactory = new SessionFactory<TestSession>(TestSession.Create);
 
-            var session = sessionFactory.CreateConnectedSession(TestConfig.DefaultConfig);
+            var session = sessionFactory.Create(TownsharpConfig.Default);
 
-            var joinedServers = await session.GetJoinedServersAsync();
+            var joinedServers = await session.GetJoinedServerDescriptionsAsync();
+
             Assert.True(joinedServers.First().Id == testServerId);
         }
     }

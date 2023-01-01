@@ -19,7 +19,7 @@ namespace Townsharp
     // public class ConsoleSession(Server)
 
     // gets you access to groups and servers, and provides management over consoles and subscriptions.
-    public class Session
+    public abstract class Session
     {
         private readonly TownsharpConfig config;
         private readonly GroupManager groupManager;
@@ -41,42 +41,47 @@ namespace Townsharp
             this.consoleSessionService = consoleSessionService;
         }
 
-        internal static Session Connect(
-            TownsharpConfig config,
-            GroupManager groupStatusProvider,
-            ServerManager serverStatusProvider,
-            SubscriptionService subscriptionService,
-            ConsoleSessionService consoleSessionService)
-            // Add room here for event handlers.
+        //internal static SessionFactory<TSession> CreateFactory<TSession>()
+        //    where TSession : Session
+        //    {
+        //        return new SessionFactory<TSession>((config) => new TSession(config));
+        //    }
+
+ 
+        internal async Task StartAsync(CancellationToken cancellationToken)
         {
-            var session = new Session(
-                config,
-                groupStatusProvider,
-                serverStatusProvider,
-                subscriptionService,
-                consoleSessionService);
+            cancellationToken.Register(() => Stop());
 
-            session.Initialize();
-
-            return session;
-        }
-
-        public async Task<Server[]> GetJoinedServersAsync()
-        {
-            return await this.serverManager.GetJoinedServersAsync();
-        }
-
-        public async Task<Server> GetServerAsync(ServerId serverId)
-        {
-            return await this.serverManager.GetServerAsync(serverId);
-        }
-
-        private void Initialize()
-        {
-            if (this.config.AutoManageJoinedGroups == true) 
+            if (this.config.AutoManageJoinedGroups == true)
             {
-                
+                // do stuff
             }
+        }
+
+        internal void Stop()
+        {
+            // do stuff
+        }
+
+        protected internal abstract Task OnStartAsync();
+
+        protected internal abstract Task OnShutdownAsync();
+
+        public abstract Task<ServerDescription[]> GetJoinedServerDescriptionsAsync();
+        //{
+        // DO IT YOURSELF! ASK YOUR MOM TO HELP YOU :P
+        // return await this.serverManager.GetJoinedServersAsync();
+        //}
+
+        public abstract Task<ServerDescription> GetServerDescriptionAsync(ServerId serverId);
+        //{
+        // DO IT YOURSELF! ASK YOUR MOM TO HELP YOU :P
+        // return await this.serverManager.GetJoinedServersAsync();
+        //}
+
+        public async Task<Server> AddServerAsync(ServerId serverId)
+        {
+            return await this.serverManager.AddServerAsync(await this.GetServerDescriptionAsync(serverId));
         }
 
         // get notified on invitations

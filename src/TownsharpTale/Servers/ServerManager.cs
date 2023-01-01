@@ -3,7 +3,7 @@ using static Townsharp.Servers.Server;
 
 namespace Townsharp.Servers
 {
-    public abstract class ServerManager
+    public class ServerManager
     {
         private readonly Action<Server, ServerOnlineEvent> onlineHandler;
         private readonly Action<Server, ServerOfflineEvent> offlineHandler;
@@ -21,6 +21,7 @@ namespace Townsharp.Servers
 
         public ConcurrentDictionary<ServerId, Server> Servers { get; set; } = new ConcurrentDictionary<ServerId, Server>();
 
+        // Hey, I'm pretty sure we can make this sealed, and then let the Session create it and handle it.  Check factory pattern for status provider.
         public ServerManager(
             TownsharpConfig config,
             Action<Server, ServerOnlineEvent> onlineHandler,
@@ -37,18 +38,14 @@ namespace Townsharp.Servers
             this.serverStatusProviderFactory = serverStatusProviderFactory;
         }
 
-        public async Task<Server> ManageServerAsync(ServerId serverId) => await GetServerCoreAsync(serverId, true);
-
-        public async Task<Server> GetServerAsync(ServerId serverId) => await GetServerCoreAsync(serverId, this.config.AutoManageJoinedServers);
-
-        public async Task<Server> GetServerCoreAsync(ServerId serverId, bool manageServer)
+        public async Task<Server> AddServerAsync(ServerDescription serverDescription)
         {
+            var serverId = serverDescription.Id;
+
             if (this.Servers.TryGetValue(serverId, out var server))
             {
                 return server;
             }
-
-            var serverDescription = await GetServerDescriptionAsync(serverId);
 
             var onlineHandler = (ServerOnlineEvent e) => this.OnlineHandler(serverId, e);
             var offlineHandler = (ServerOfflineEvent e) => this.OfflineHandler(serverId, e);
@@ -57,7 +54,7 @@ namespace Townsharp.Servers
 
             IServerStatusProvider serverStatusProvider = serverStatusProviderFactory.CreateProviderForServerId(serverId);
 
-            var newServer = Server.CreateServer(serverDescription, onlineHandler, offlineHandler, playerJoinedHandler, playerLeftHandler, serverStatusProvider);
+            var newServer = await Server.CreateServerAsync(serverDescription, onlineHandler, offlineHandler, playerJoinedHandler, playerLeftHandler, serverStatusProvider);
 
             var finalServer = this.Servers.AddOrUpdate(serverId, newServer, (id, s) => s);
 
@@ -66,18 +63,8 @@ namespace Townsharp.Servers
             playerJoinedHandlers.TryAdd(serverId, playerJoinedHandler);
             playerLeftHandlers.TryAdd(serverId, playerLeftHandler);
 
-            if (this.config.AutoManageJoinedServers)
-            {
-                await finalServer.StartManagementAsync();
-            }
-
             return finalServer;
         }
-
-        // do these need to be here and abstract? or should they be on some sort of dependency?
-        public abstract Task<ServerDescription> GetServerDescriptionAsync(ServerId serverId);
-
-        public abstract Task<Server[]> GetJoinedServersAsync();
 
         private void OnlineHandler(ServerId serverId, Server.ServerOnlineEvent serverOnlineEvent)
         {
