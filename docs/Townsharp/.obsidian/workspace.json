@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Townsharp Model/Group.md",
+                "file": "Townsharp Model/Ubiquitous Language/Group.md",
                 "mode": "source",
                 "source": false
               }
@@ -61,24 +61,110 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Alta Models/Server.md",
+                "file": "Townsharp Model/Server.md",
                 "mode": "source",
                 "source": false
               }
             }
           },
           {
-            "id": "9e97e07c6199df98",
+            "id": "7d4f15516ca8bbf7",
             "type": "leaf",
             "state": {
-              "type": "release-notes",
+              "type": "markdown",
               "state": {
-                "currentVersion": "1.1.9"
+                "file": "Townsharp Model/Ubiquitous Language/Session.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "2a56c4294f7b022b",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/Group.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "391d6b1fd305d696",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/Server.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "10318d50f4a518fe",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/Session.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "c60c2213781e5416",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/User.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "a1e3d5981b6d3374",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/ConsoleSession.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "626fd1e1fc2e5dff",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/Group.md",
+                "mode": "source",
+                "source": false
+              }
+            }
+          },
+          {
+            "id": "f33df1ea2c4b91c3",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "Townsharp Model/Ubiquitous Language/Member.md",
+                "mode": "source",
+                "source": false
               }
             }
           }
         ],
-        "currentTab": 5
+        "currentTab": 1
       }
     ],
     "direction": "vertical"
@@ -144,7 +230,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Alta Models/Server.md",
+                "file": "Townsharp Model/Ubiquitous Language/Group.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -161,7 +247,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Alta Models/Server.md",
+                "file": "Townsharp Model/Ubiquitous Language/Group.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -184,7 +270,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Alta Models/Server.md"
+                "file": "Townsharp Model/Ubiquitous Language/Group.md"
               }
             }
           }
@@ -204,13 +290,17 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "9e97e07c6199df98",
+  "active": "751e8a7beacb5f64",
   "lastOpenFiles": [
-    "Alta Models/Console POST.md",
-    "Alta Models/Group.md",
-    "Alta Models/Server.md",
+    "Townsharp Model/Ubiquitous Language/User.md",
     "Townsharp Model/Group.md",
-    "Townsharp Model/Untitled.md",
-    "Townsharp Model/Domain Entities.md"
+    "Townsharp Model/Domain Entities.md",
+    "Townsharp Model/Ubiquitous Language/Member.md",
+    "Townsharp Model/Ubiquitous Language/Group.md",
+    "Alta Models/Server.md",
+    "Alta Models/Group.md",
+    "Alta Models/Console POST.md",
+    "Townsharp Model/Ubiquitous Language/SubscriptionManager.md",
+    "Townsharp Model/Ubiquitous Language/ConsoleSession.md"
   ]
 }

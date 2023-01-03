@@ -1,6 +1,6 @@
 Trying to work through my thoughts on the relationship between groups, servers, session, and subscription so here goes.
 
-[[Session]]
+[[Townsharp Model/Session]]
 Session is the root access point for interacting with Townsharp.  A session represents a single access context, capturing credentials, managing access lifecycles, and ensuring isolation of logical management of a given "workspace" when it comes to dealing with Townsharp models.  Ideally multiple sessions can coexist with overlapping or distinct credentials and state without interference, giving a means for multi-tenancy in process.
 
 [[Townsharp Model/Group]]
