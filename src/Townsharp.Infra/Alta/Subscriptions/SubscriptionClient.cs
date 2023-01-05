@@ -56,7 +56,7 @@ namespace Townsharp.Infra.Alta.Subscriptions
                 new ServerId(message.Content.Id),
                 new GroupId(message.Content.GroupId),
                 message.Content.IsOnline,
-                message.Content.OnlinePlayers.Select(player => new PlayerDescription(new PlayerId(player.Id), player.Username)).ToArray());
+                message.Content.OnlinePlayers.Select(player => new PlayerInfo(new PlayerId(player.Id), player.Username)).ToArray());
         }
 
         // NOTE: Consider switching to att-client's "disconnected/reconnected" model and push resubscription upstream into the application model.

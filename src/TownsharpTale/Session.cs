@@ -5,27 +5,36 @@ using Townsharp.Subscriptions;
 
 namespace Townsharp
 {
-
-    // only place we can "make" groups and server objects.  Also manages console sessions and subscription events.
-    // public class Session(GroupManager, ServerManager, ConsoleSessionService, SubscriptionService)
-
-    // made by the GroupManager, is given a IGroupStatusProvider at creation.
-    // public class Group(IGroupStatusProvider, Session)
-
-    // made by the ServerManager, is given a IServerStatusProvider at creation.
-    // public class Server(IServerStatusProvider, Session) 
-
-    // made by (and accessed through) the ConsoleSessionService.  Dies when disconnected for any reason, and the ConsoleSessionService may yield new ConsoleSessions when the console reconnects
-    // public class ConsoleSession(Server)
-
-    // gets you access to groups and servers, and provides management over consoles and subscriptions.
-    public abstract class Session
+    public class Session
     {
-        private readonly TownsharpConfig config;
+        public TownsharpConfig Config { get; }
+
         private readonly GroupManager groupManager;
         private readonly ServerManager serverManager;
         private readonly SubscriptionService subscriptionService;
         private readonly ConsoleSessionService consoleSessionService;
+
+        private bool isStarted = false;
+
+        public GroupManager GroupManager => IfStarted(() => this.groupManager);
+
+        public ServerManager ServerManager => IfStarted(() => this.serverManager);
+
+        public SubscriptionService SubscriptionService => IfStarted(() => this.subscriptionService);
+
+        public ConsoleSessionService ConsoleSessionService => IfStarted(() => this.consoleSessionService);
+
+        private T IfStarted<T>(Func<T> function)
+        {
+            if (this.isStarted)
+            {
+                return (function());
+            }
+            else
+            {
+                throw new SessionNotReadyException("This action is not available on an unstarted session.  Make sure Session was created by a SessionFactory");
+            }
+        }
 
         protected internal Session(
             TownsharpConfig config,
@@ -34,54 +43,19 @@ namespace Townsharp
             SubscriptionService subscriptionService,
             ConsoleSessionService consoleSessionService)
         {
-            this.config = config;
+            this.Config = config;
             this.groupManager = groupManager;
             this.serverManager = serverManager;
             this.subscriptionService = subscriptionService;
             this.consoleSessionService = consoleSessionService;
         }
-
-        //internal static SessionFactory<TSession> CreateFactory<TSession>()
-        //    where TSession : Session
-        //    {
-        //        return new SessionFactory<TSession>((config) => new TSession(config));
-        //    }
-
- 
-        internal async Task StartAsync(CancellationToken cancellationToken)
+         
+        internal void Start()
         {
-            cancellationToken.Register(() => Stop());
-
-            if (this.config.AutoManageJoinedGroups == true)
+            if (this.Config.AutoManageJoinedGroups == true)
             {
                 // do stuff
             }
-        }
-
-        internal void Stop()
-        {
-            // do stuff
-        }
-
-        protected internal abstract Task OnStartAsync();
-
-        protected internal abstract Task OnShutdownAsync();
-
-        public abstract Task<ServerDescription[]> GetJoinedServerDescriptionsAsync();
-        //{
-        // DO IT YOURSELF! ASK YOUR MOM TO HELP YOU :P
-        // return await this.serverManager.GetJoinedServersAsync();
-        //}
-
-        public abstract Task<ServerDescription> GetServerDescriptionAsync(ServerId serverId);
-        //{
-        // DO IT YOURSELF! ASK YOUR MOM TO HELP YOU :P
-        // return await this.serverManager.GetJoinedServersAsync();
-        //}
-
-        public async Task<Server> AddServerAsync(ServerId serverId)
-        {
-            return await this.serverManager.AddServerAsync(await this.GetServerDescriptionAsync(serverId));
         }
 
         // get notified on invitations

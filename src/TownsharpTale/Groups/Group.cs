@@ -35,7 +35,7 @@ namespace Townsharp.Groups
             this.GroupType = groupType;
         }
 
-        public Group(GroupDescription description)
+        public Group(GroupInfo description)
             : this(
                   description.Id,
                   description.Name,

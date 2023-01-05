@@ -5,113 +5,112 @@ namespace Townsharp.Servers
 {
     public class ServerManager
     {
-        private readonly Action<Server, ServerOnlineEvent> onlineHandler;
-        private readonly Action<Server, ServerOfflineEvent> offlineHandler;
-        private readonly Action<Server, PlayerJoinedEvent> playerJoinedHandler;
-        private readonly Action<Server, PlayerLeftEvent> playerLeftHandler;
-
-        private readonly IServerStatusProviderFactory serverStatusProviderFactory;
-
-        private readonly Dictionary<ServerId, Action<ServerOnlineEvent>> onlineHandlers = new();
-        private readonly Dictionary<ServerId, Action<ServerOfflineEvent>> offlineHandlers = new();
-        private readonly Dictionary<ServerId, Action<PlayerJoinedEvent>> playerJoinedHandlers = new();
-        private readonly Dictionary<ServerId, Action<PlayerLeftEvent>> playerLeftHandlers = new();
-
         private readonly TownsharpConfig config;
 
-        public ConcurrentDictionary<ServerId, Server> Servers { get; set; } = new ConcurrentDictionary<ServerId, Server>();
+        private readonly ConcurrentDictionary<ServerId, Server> managedServers = new ConcurrentDictionary<ServerId, Server>();
 
         // Hey, I'm pretty sure we can make this sealed, and then let the Session create it and handle it.  Check factory pattern for status provider.
-        public ServerManager(
-            TownsharpConfig config,
-            Action<Server, ServerOnlineEvent> onlineHandler,
-            Action<Server, ServerOfflineEvent> offlineHandler,
-            Action<Server, PlayerJoinedEvent> playerJoinedHandler,
-            Action<Server, PlayerLeftEvent> playerLeftHandler,
-            IServerStatusProviderFactory serverStatusProviderFactory)
+        public ServerManager(TownsharpConfig config)
         {
             this.config = config;
-            this.onlineHandler = onlineHandler;
-            this.offlineHandler = offlineHandler;
-            this.playerJoinedHandler = playerJoinedHandler;
-            this.playerLeftHandler = playerLeftHandler;
-            this.serverStatusProviderFactory = serverStatusProviderFactory;
         }
 
-        public async Task<Server> AddServerAsync(ServerDescription serverDescription)
+        public Server AddServer(ServerInfo serverDescription)
         {
             var serverId = serverDescription.Id;
 
-            if (this.Servers.TryGetValue(serverId, out var server))
+            if (this.managedServers.TryGetValue(serverId, out var server))
             {
                 return server;
             }
 
-            var onlineHandler = (ServerOnlineEvent e) => this.OnlineHandler(serverId, e);
-            var offlineHandler = (ServerOfflineEvent e) => this.OfflineHandler(serverId, e);
-            var playerJoinedHandler = (PlayerJoinedEvent e) => this.PlayerJoinedHandler(serverId, e);
-            var playerLeftHandler = (PlayerLeftEvent e) => this.PlayerLeftHandler(serverId, e);
+            var newServer = Server.Create(serverDescription, this);
 
-            IServerStatusProvider serverStatusProvider = serverStatusProviderFactory.CreateProviderForServerId(serverId);
-
-            var newServer = await Server.CreateServerAsync(serverDescription, onlineHandler, offlineHandler, playerJoinedHandler, playerLeftHandler, serverStatusProvider);
-
-            var finalServer = this.Servers.AddOrUpdate(serverId, newServer, (id, s) => s);
-
-            onlineHandlers.TryAdd(serverId, onlineHandler);
-            offlineHandlers.TryAdd(serverId, offlineHandler);
-            playerJoinedHandlers.TryAdd(serverId, playerJoinedHandler);
-            playerLeftHandlers.TryAdd(serverId, playerLeftHandler);
+            var finalServer = this.managedServers.AddOrUpdate(serverId, newServer, (id, s) => s);
 
             return finalServer;
         }
 
-        private void OnlineHandler(ServerId serverId, Server.ServerOnlineEvent serverOnlineEvent)
+        private void OnlineHandler(ServerId serverId, ServerOnlineEvent serverOnlineEvent)
         {
-            if (this.onlineHandlers.TryGetValue(serverId, out var onlineHandler))
-            {
-                onlineHandler.Invoke(serverOnlineEvent);
-            }
-            else
-            {
-                throw new InvalidOperationException("Possible race condition. This isn't expected, please notify Townsharp Developers.");
-            }
+            throw new NotImplementedException();
         }
 
-        private void OfflineHandler(ServerId serverId, Server.ServerOfflineEvent serverOfflineEvent)
+        private void OfflineHandler(ServerId serverId, ServerOfflineEvent serverOfflineEvent)
         {
-            if (this.offlineHandlers.TryGetValue(serverId, out var offlineHandler))
-            {
-                offlineHandler.Invoke(serverOfflineEvent);
-            }
-            else
-            {
-                throw new InvalidOperationException("Possible race condition. This isn't expected, please notify Townsharp Developers.");
-            }
+            throw new NotImplementedException();
         }
 
-        private void PlayerJoinedHandler(ServerId serverId, Server.PlayerJoinedEvent playerJoinedEvent)
+        private void PlayerJoinedHandler(ServerId serverId, PlayerJoinedEvent playerJoinedEvent)
         {
-            if (this.playerJoinedHandlers.TryGetValue(serverId, out var playerJoinedHandler))
-            {
-                playerJoinedHandler.Invoke(playerJoinedEvent);
-            }
-            else
-            {
-                throw new InvalidOperationException("Possible race condition. This isn't expected, please notify Townsharp Developers.");
-            }
+            throw new NotImplementedException();
         }
 
-        private void PlayerLeftHandler(ServerId serverId, Server.PlayerLeftEvent playerLeftEvent)
+        private void PlayerLeftHandler(ServerId serverId, PlayerLeftEvent playerLeftEvent)
         {
-            if (this.playerLeftHandlers.TryGetValue(serverId, out var playerLeftHandler))
-            {
-                playerLeftHandler.Invoke(playerLeftEvent);
-            }
-            else
-            {
-                throw new InvalidOperationException("Possible race condition. This isn't expected, please notify Townsharp Developers.");
-            }
+            throw new NotImplementedException();
         }
+
+        internal Task<PlayerInfo[]> GetOnlinePlayersAsync(Server server)
+        {
+            throw new NotImplementedException();
+        }
+
+        internal Task<bool> GetUpdatedServerOnlineStatusAsync()
+        {
+            throw new NotImplementedException();
+        }
+
+        //private void HandleStatusChange(ServerStatus status)
+        //{
+        //    var currentPlayerIds = this.lastOnlinePlayers.Select(p => p.Id);
+        //    var updatedPlayerIds = status.OnlinePlayers.Select(p => p.Id);
+
+        //    if (!updatedPlayerIds.SequenceEqual(currentPlayerIds))
+        //    {
+        //        // handle players changed.
+        //        var playersJoinedIds = updatedPlayerIds.Except(currentPlayerIds).ToArray();
+        //        var playersLeftIds = currentPlayerIds.Except(updatedPlayerIds).ToArray();
+
+        //        var lastKnownPlayersMap = this.lastOnlinePlayers.ToDictionary(p => p.Id, p => p);
+
+        //        foreach (var leavingPlayerId in playersLeftIds)
+        //        {
+        //            var leavingPlayer = lastKnownPlayersMap[leavingPlayerId];
+        //            lastOnlinePlayers.Remove(leavingPlayer);
+        //            this.playerLeftHandler.Invoke(new PlayerLeftEvent(leavingPlayer));
+        //        }
+
+        //        var onlinePlayersMap = status.OnlinePlayers.ToDictionary(p => p.Id, p => p);
+
+        //        foreach (var joiningPlayerId in playersJoinedIds)
+        //        {
+        //            var joiningPlayer = new Player(joiningPlayerId, onlinePlayersMap[joiningPlayerId].UserName);
+        //            lastOnlinePlayers.Add(joiningPlayer);
+        //            this.playerJoinedHandler.Invoke(new PlayerJoinedEvent(joiningPlayer));
+        //        }
+        //    }
+
+        //    if (status.IsOnline != this.isOnline)
+        //    {
+        //        // handle online status changed.
+        //        if (status.IsOnline)
+        //        {
+        //            this.onlineHandler(new ServerOnlineEvent());
+        //        }
+        //        else
+        //        {
+        //            this.offlineHandler(new ServerOfflineEvent());
+        //        }
+        //    }
+        //}
+
+        public record struct ServerOnlineEvent();
+
+        public record struct ServerOfflineEvent();
+
+        public record struct PlayerJoinedEvent(Player JoiningPlayer);
+
+        public record struct PlayerLeftEvent(Player LeavingPlayer);
     }
 }

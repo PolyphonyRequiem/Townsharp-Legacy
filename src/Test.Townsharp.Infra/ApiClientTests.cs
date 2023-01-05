@@ -1,13 +1,10 @@
-using System.Linq;
-using Townsharp.Api;
-using Townsharp.Groups;
 using Townsharp.Infra.Alta.Api;
 
 namespace Test.Townsharp.Infra
 {
     public class ApiClientTests
     {
-        IApiClient apiClient;
+        ApiClient apiClient;
 
         public ApiClientTests(ApiClient apiClient)
         {

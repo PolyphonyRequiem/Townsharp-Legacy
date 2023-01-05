@@ -10,8 +10,7 @@
             this.createSession = createSession;
         }
 
-        public Session Create(
-            TownsharpConfig config)
+        public Session Create(TownsharpConfig config)
         {
             return createSession(config);
         }
