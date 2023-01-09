@@ -1,64 +1,46 @@
 ﻿using System.Collections.Concurrent;
-using static Townsharp.Servers.Server;
+using Townsharp.Api;
+using Townsharp.Subscriptions;
 
 namespace Townsharp.Servers
 {
+    /// <summary>
+    /// Responsible for Managing Server Lifecycles, responding to subscription events, 
+    /// </summary>
     public class ServerManager
     {
-        private readonly TownsharpConfig config;
-
         private readonly ConcurrentDictionary<ServerId, Server> managedServers = new ConcurrentDictionary<ServerId, Server>();
+        private readonly ApiClient apiClient;
+        private readonly SubscriptionService subscriptionService;
 
-        // Hey, I'm pretty sure we can make this sealed, and then let the Session create it and handle it.  Check factory pattern for status provider.
-        public ServerManager(TownsharpConfig config)
+        internal ServerManager(
+            ApiClient apiClient,
+            SubscriptionService subscriptionService)
         {
-            this.config = config;
+            this.apiClient = apiClient;
+            this.subscriptionService = subscriptionService;
         }
 
-        public Server AddServer(ServerInfo serverDescription)
+        public async Task<Server> ManageServerAsync(ServerId serverId)
         {
-            var serverId = serverDescription.Id;
-
             if (this.managedServers.TryGetValue(serverId, out var server))
             {
                 return server;
             }
 
-            var newServer = Server.Create(serverDescription, this);
+            var response = await this.apiClient.GetServerAsync(serverId);
+
+            var newServer = Server.Create(
+                response.Id,
+                response.GroupId,
+                response.Name,
+                response.Description,
+                response.Region,
+                this.apiClient);
 
             var finalServer = this.managedServers.AddOrUpdate(serverId, newServer, (id, s) => s);
 
             return finalServer;
-        }
-
-        private void OnlineHandler(ServerId serverId, ServerOnlineEvent serverOnlineEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void OfflineHandler(ServerId serverId, ServerOfflineEvent serverOfflineEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void PlayerJoinedHandler(ServerId serverId, PlayerJoinedEvent playerJoinedEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        private void PlayerLeftHandler(ServerId serverId, PlayerLeftEvent playerLeftEvent)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal Task<PlayerInfo[]> GetOnlinePlayersAsync(Server server)
-        {
-            throw new NotImplementedException();
-        }
-
-        internal Task<bool> GetUpdatedServerOnlineStatusAsync()
-        {
-            throw new NotImplementedException();
         }
 
         //private void HandleStatusChange(ServerStatus status)

@@ -1,15 +1,15 @@
 ﻿using Microsoft.Extensions.Logging;
-using static Townsharp.Infra.Alta.Json.JsonUtils;
-using Townsharp.Infra.Composition;
+using static Townsharp.Api.Json.JsonUtils;
 using Townsharp.Groups;
 using Townsharp.Servers;
 using Townsharp.Users;
 using System.Net.Http.Json;
 using Townsharp.Consoles;
+using Townsharp.Api.Composition;
 
-namespace Townsharp.Infra.Alta.Api
+namespace Townsharp.Api
 {
-    public class ApiClient : IServerService, IGroupService
+    public class ApiClient
     {
         public const int Limit = 100;
         public const string BaseAddress = "https://webapi.townshiptale.com/";
@@ -21,18 +21,17 @@ namespace Townsharp.Infra.Alta.Api
         public ApiClient(IHttpClientFactory httpClientFactory, ILogger<ApiClient> logger)
         {
             this.logger = logger;
-            this.getBotHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.Bot);
-            this.getUserHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.User);
+            getBotHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.Bot);
+            getUserHttpClient = () => httpClientFactory.CreateClient(HttpClientNames.User);
         }
 
         // Allow client type to be specified where possible, User, Bot, Auto.
-        public async Task<GroupInfo> GetGroupDescription(GroupId groupId)
+        public async Task<ApiGroup> GetGroup(GroupId groupId)
         {
-            var groupInfo = (await getBotHttpClient().GetFromJsonAsync<ApiGroup>($"api/groups/{groupId}"))!;
-            return MapToGroupInfo(groupInfo);
+            return (await getBotHttpClient().GetFromJsonAsync<ApiGroup>($"api/groups/{groupId}", DefaultSerializerOptions))!;            
         }
 
-        public async IAsyncEnumerable<GroupInfo> GetJoinedGroupDescriptions()
+        public async IAsyncEnumerable<ApiJoinedGroup> GetJoinedGroups()
         {
             HttpClient client = getBotHttpClient();
             HttpResponseMessage response;
@@ -43,7 +42,7 @@ namespace Townsharp.Infra.Alta.Api
                 var message = lastPaginationToken != string.Empty ?
                     new HttpRequestMessage(HttpMethod.Get, $"api/groups/joined?limit={Limit}&paginationToken={lastPaginationToken}") :
                     new HttpRequestMessage(HttpMethod.Get, $"api/groups/joined?limit={Limit}");
-                    
+
                 response = await client.SendAsync(message);
 
                 if (!response.IsSuccessStatusCode)
@@ -54,17 +53,17 @@ namespace Townsharp.Infra.Alta.Api
 
                 lastPaginationToken = response.Headers.Contains("paginationToken") ?
                     response.Headers.GetValues("paginationToken").First() :
-                    String.Empty;
+                    string.Empty;
 
                 foreach (var joinedGroup in await response.Content.ReadFromJsonAsync<ApiJoinedGroup[]>(DefaultSerializerOptions) ?? new ApiJoinedGroup[0])
                 {
-                    yield return MapToGroupInfo(joinedGroup.Group);
+                    yield return joinedGroup;
                 }
             }
-            while (response.Headers.Contains("paginationToken"));            
+            while (response.Headers.Contains("paginationToken"));
         }
 
-        public async IAsyncEnumerable<GroupInfo> GetPendingGroupInvitations()
+        public async IAsyncEnumerable<ApiInvitedGroup> GetPendingGroupInvitations()
         {
             HttpClient client = getBotHttpClient();
             HttpResponseMessage response;
@@ -91,7 +90,7 @@ namespace Townsharp.Infra.Alta.Api
 
                 foreach (var invitedGroup in await response.Content.ReadFromJsonAsync<ApiInvitedGroup[]>(DefaultSerializerOptions) ?? new ApiInvitedGroup[0])
                 {
-                    yield return MapToGroupInfo(invitedGroup);
+                    yield return invitedGroup;
                 }
             }
             while (response.Headers.Contains("paginationToken"));
@@ -105,7 +104,7 @@ namespace Townsharp.Infra.Alta.Api
             return response.IsSuccessStatusCode;
         }
 
-        public async Task<GroupMemberInfo> GetGroupMember(GroupId groupId, UserId userId)
+        public async Task<ApiGroupMember> GetGroupMember(GroupId groupId, UserId userId)
         {
             HttpClient client = getBotHttpClient();
             var response = await client.GetAsync($"api/groups/{groupId}/members/{userId}");
@@ -118,10 +117,10 @@ namespace Townsharp.Infra.Alta.Api
 
             var groupMember = await response.Content.ReadFromJsonAsync<ApiGroupMember>(DefaultSerializerOptions);
 
-            return MapToGroupMemberInfo(groupMember!);
+            return groupMember!;
         }
 
-        public async IAsyncEnumerable<Townsharp.Servers.ServerInfo> GetJoinedServerInfosAsync()
+        public async IAsyncEnumerable<ApiServer> GetJoinedServerInfosAsync()
         {
             HttpClient client = getBotHttpClient();
             HttpResponseMessage response;
@@ -143,17 +142,17 @@ namespace Townsharp.Infra.Alta.Api
 
                 lastPaginationToken = response.Headers.Contains("paginationToken") ?
                     response.Headers.GetValues("paginationToken").First() :
-                    String.Empty;
+                    string.Empty;
 
                 foreach (var joinedServer in await response.Content.ReadFromJsonAsync<ApiServer[]>(DefaultSerializerOptions) ?? new ApiServer[0])
                 {
-                    yield return MapToServerInfo(joinedServer);
+                    yield return joinedServer;
                 }
             }
             while (response.Headers.Contains("paginationToken"));
         }
 
-        public async Task<Townsharp.Servers.ServerInfo> GetServerInfoAsync(ServerId serverId)
+        public async Task<ApiServer> GetServerAsync(ServerId serverId)
         {
             HttpClient client = getBotHttpClient();
             var response = await client.GetAsync($"api/servers/{serverId}");
@@ -166,7 +165,7 @@ namespace Townsharp.Infra.Alta.Api
 
             var serverInfo = await response.Content.ReadFromJsonAsync<ApiServer>(DefaultSerializerOptions);
 
-            return MapToServerInfo(serverInfo!);
+            return serverInfo!;
         }
 
         public async Task<ConsoleAccessResult> RequestConsoleAccess(ServerId serverId)
@@ -184,44 +183,12 @@ namespace Townsharp.Infra.Alta.Api
 
             if (!serverJoinResult?.Allowed ?? false)
             {
-                return new ConsoleAccessResult(IsOnline: false, default, String.Empty);
+                return new ConsoleAccessResult(IsOnline: false, default, string.Empty);
             }
 
             var connection = serverJoinResult!.Connection!;
 
             return new ConsoleAccessResult(IsOnline: true, new Uri($"ws://{connection.Address}:{connection.WebsocketPort}"), serverJoinResult.Token);
-        }
-
-
-        internal static GroupInfo MapToGroupInfo(ApiGroup apiGroup)
-        {
-            return new GroupInfo(
-                new GroupId(apiGroup.Id),
-                apiGroup.Name ?? "",
-                apiGroup.Description ?? "",
-                Enum.Parse<GroupType>(apiGroup.Type));
-        }
-
-        internal static GroupMemberInfo MapToGroupMemberInfo(ApiGroupMember apiGroupMember)
-        {
-            return new GroupMemberInfo(
-                new GroupId(apiGroupMember.GroupId),
-                new UserId(apiGroupMember.UserId),
-                apiGroupMember.Username,
-                apiGroupMember.Bot,
-                new RoleId(apiGroupMember.RoleId),
-                DateTime.Parse(apiGroupMember.CreatedAt),
-                Enum.Parse<GroupMemberType>(apiGroupMember.Type));
-        }
-
-        internal static ServerInfo MapToServerInfo(ApiServer apiServer)
-        {
-            return new ServerInfo(
-                new ServerId(apiServer.Id),
-                new GroupId(apiServer.GroupId),
-                apiServer.Name,
-                apiServer.Description,
-                apiServer.Region);
         }
 
         // NESTED TYPES

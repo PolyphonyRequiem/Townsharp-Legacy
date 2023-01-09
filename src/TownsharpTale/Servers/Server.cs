@@ -1,10 +1,11 @@
-﻿using Townsharp.Groups;
+﻿using Townsharp.Api;
+using Townsharp.Groups;
 
 namespace Townsharp.Servers
 {
     public class Server
     {
-        private readonly ServerManager serverManager;
+        private readonly ApiClient apiClient;
 
         public ServerId Id { get; }
 
@@ -17,29 +18,44 @@ namespace Townsharp.Servers
         public string Region { get; }
 
         private Server(
-            ServerInfo description,
-            ServerManager serverManager)
+            ServerId id,
+            GroupId groupId,
+            string name,
+            string description,
+            string region,
+            ApiClient apiClient)
         {
-            this.Id = description.Id;
-            this.GroupId = description.GroupId;
-            this.Name = description.Name;
-            this.Description = description.Description;
-            this.Region = description.Region;
-
-            this.serverManager = serverManager;
+            this.Id = id;
+            this.GroupId = groupId;
+            this.Name = name;
+            this.Description = description;
+            this.Region = region;
+            this.apiClient = apiClient;
         }
 
         internal static Server Create(
-            ServerInfo description,
-            ServerManager serverManager)
+            ServerId id,
+            GroupId groupId,
+            string name,
+            string description,
+            string region,
+            ApiClient apiClient)
         {
             return new Server(
+                id,
+                groupId, 
+                name,
                 description,
-                serverManager);
+                region,
+                apiClient);
         }
 
-        public async Task<bool> CheckIsOnlineAsync() => await this.serverManager.GetUpdatedServerOnlineStatusAsync();
+        public async Task<bool> CheckIsOnlineAsync() => (await this.apiClient.GetServerAsync(this.Id)).IsOnline;
 
-        public async Task<PlayerInfo[]> GetOnlinePlayers() => await this.serverManager.GetOnlinePlayersAsync(this);
+
+        public async Task<IEnumerable<PlayerInfo>> GetOnlinePlayers() => 
+            (await this.apiClient.GetServerAsync(this.Id))
+                .OnlinePlayers
+                .Select(player=> new PlayerInfo(player.Id, player.Username));
     }
 }

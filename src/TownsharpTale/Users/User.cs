@@ -1,6 +1,4 @@
-﻿using Townsharp.Users;
-
-namespace Townsharp.Groups.Users
+﻿namespace Townsharp.Users
 {
     public class User
     {

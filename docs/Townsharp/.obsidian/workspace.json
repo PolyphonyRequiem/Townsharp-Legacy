@@ -25,7 +25,7 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "Townsharp Model/Ubiquitous Language/Group.md",
+                "file": "Townsharp Model/Subscription.md",
                 "mode": "source",
                 "source": false
               }
@@ -230,7 +230,7 @@
             "state": {
               "type": "backlink",
               "state": {
-                "file": "Townsharp Model/Ubiquitous Language/Group.md",
+                "file": "Townsharp Model/Subscription.md",
                 "collapseAll": false,
                 "extraContext": false,
                 "sortOrder": "alphabetical",
@@ -247,7 +247,7 @@
             "state": {
               "type": "outgoing-link",
               "state": {
-                "file": "Townsharp Model/Ubiquitous Language/Group.md",
+                "file": "Townsharp Model/Subscription.md",
                 "linksCollapsed": false,
                 "unlinkedCollapsed": true
               }
@@ -270,7 +270,7 @@
             "state": {
               "type": "outline",
               "state": {
-                "file": "Townsharp Model/Ubiquitous Language/Group.md"
+                "file": "Townsharp Model/Subscription.md"
               }
             }
           }
@@ -290,13 +290,13 @@
       "command-palette:Open command palette": false
     }
   },
-  "active": "751e8a7beacb5f64",
+  "active": "64d071bc038c4d82",
   "lastOpenFiles": [
+    "Townsharp Model/Ubiquitous Language/Group.md",
     "Townsharp Model/Ubiquitous Language/User.md",
     "Townsharp Model/Group.md",
     "Townsharp Model/Domain Entities.md",
     "Townsharp Model/Ubiquitous Language/Member.md",
-    "Townsharp Model/Ubiquitous Language/Group.md",
     "Alta Models/Server.md",
     "Alta Models/Group.md",
     "Alta Models/Console POST.md",

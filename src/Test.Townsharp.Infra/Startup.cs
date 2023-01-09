@@ -1,5 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
+using Townsharp.Api;
+using Townsharp.Api.Composition;
 using Townsharp.Infra.Alta.Api;
 using Townsharp.Infra.Alta.Identity;
 using Townsharp.Infra.Composition;

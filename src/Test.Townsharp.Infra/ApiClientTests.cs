@@ -1,3 +1,4 @@
+using Townsharp.Api;
 using Townsharp.Infra.Alta.Api;
 
 namespace Test.Townsharp.Infra

@@ -1,4 +1,4 @@
-﻿namespace Townsharp.Servers.Consoles
+﻿namespace Townsharp.Consoles
 {
     public class ConsoleSession
     {
