@@ -18,7 +18,7 @@ namespace Townsharp.Api.Json
 
         public static Maybe<T> Deserialize<T>(string content)
         {
-            var result = JsonSerializer.Deserialize<T>(content, DefaultSerializerOptions);
+            var result = JsonSerializer.Deserialize<T>(content);
             return result != null ?
                 Maybe.From(result):
                 Maybe.None;

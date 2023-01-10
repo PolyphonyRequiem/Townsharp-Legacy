@@ -54,6 +54,8 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Townsharp.PopulationMonitor
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Townsharp.DiscordMarketplace", "Townsharp.DiscordMarketplace\Townsharp.DiscordMarketplace.csproj", "{DCD9EA17-9213-41BD-9FBF-6562077F915E}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SubscriptionClientTest", "SubscriptionClientTest\SubscriptionClientTest.csproj", "{A847CC65-8907-402B-8A18-EBD71CC7B878}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -120,6 +122,10 @@ Global
 		{DCD9EA17-9213-41BD-9FBF-6562077F915E}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{DCD9EA17-9213-41BD-9FBF-6562077F915E}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{DCD9EA17-9213-41BD-9FBF-6562077F915E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A847CC65-8907-402B-8A18-EBD71CC7B878}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A847CC65-8907-402B-8A18-EBD71CC7B878}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A847CC65-8907-402B-8A18-EBD71CC7B878}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A847CC65-8907-402B-8A18-EBD71CC7B878}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -141,6 +147,7 @@ Global
 		{95670102-EBF3-4C0F-A867-F4F4B7F7B1AA} = {2EFAFEAC-41B1-485C-95AE-E6F8C307CB3E}
 		{2BF178B5-9C4C-4E4A-A1E5-148721D2C175} = {7F36AC30-D5C3-4726-A060-AD3A265301CE}
 		{DCD9EA17-9213-41BD-9FBF-6562077F915E} = {7F36AC30-D5C3-4726-A060-AD3A265301CE}
+		{A847CC65-8907-402B-8A18-EBD71CC7B878} = {2EFAFEAC-41B1-485C-95AE-E6F8C307CB3E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {C02D4807-D069-4868-AA91-ECF877998A5F}
