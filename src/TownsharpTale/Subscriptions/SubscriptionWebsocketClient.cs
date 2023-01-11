@@ -4,48 +4,9 @@ using System.Reactive.Linq;
 using System.Reactive.Threading.Tasks;
 using static Townsharp.Api.Json.JsonUtils;
 using Websocket.Client;
-using System.Reactive.Subjects;
 
 namespace Townsharp.Subscriptions
 {
-    /// <summary>
-    /// 
-    /// <remarks>
-    /// 
-    /// ```
-    /// {
-    ///     "id": |messageId|,
-    ///     "method": "|method|",
-    ///     "path": "|path|",
-    ///     "authorization": "Bearer |token|"
-    /// }
-    /// ```
-    /// 
-    /// A response is of the form:
-    /// 
-    /// ```
-    ///    {
-    ///    "id": 1,
-    ///    "event": "response",
-    ///    "key": "POST /ws/subscription/group-server-status/1156211297",
-    ///    "content": "",
-    ///    "responseCode": 200
-    ///}
-    /// ```
-    /// 
-    /// Errors look like this, note the embedded json:
-    /// ```
-    /// {
-    ///     "id": 1,
-    ///     "event": "response",
-    ///     "key": "POST /ws/subscription/group-server-status/103278376",
-    ///     "content": "{\"message\":\"Could not find any Group with identifier 103278376\",\"error_code\":\"ObjectNotFound\"}",
-    ///     "responseCode": 404
-    /// }
-    /// ```
-    /// </remarks>
-    /// </summary>
-    // Subscription Client should be envelope aware!~
     internal class SubscriptionWebsocketClient : WebsocketClient, IDisposable
     {
         private static readonly TimeSpan ResponseTimeout = TimeSpan.FromSeconds(30);
@@ -80,7 +41,7 @@ namespace Townsharp.Subscriptions
                 .AsObservable();
 
         // NOTE: Content is basically only used for sending the migration token
-        public async Task<Result<SubscriptionClientResponse, SubscriptionClientErrorResponse>> SendRequest(
+        public async Task<Result<SubscriptionClientResponse, SubscriptionClientErrorResponse>> SendRequestAsync(
             HttpMethod method, 
             string path, 
             string content = "", 
@@ -211,5 +172,5 @@ namespace Townsharp.Subscriptions
 
     internal record SubscriptionClientErrorResponse(string Message, string ErrorCode);
 
-    internal record SubscriptionEvent(string Event, string Key, string Content);
+    public record SubscriptionEvent(string Event, string Key, string Content);
 }
