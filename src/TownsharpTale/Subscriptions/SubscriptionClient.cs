@@ -8,6 +8,10 @@ using static Townsharp.Api.Json.JsonUtils;
 
 namespace Townsharp.Subscriptions
 {
+    /// <summary>
+    /// Document the lifecycle and usage here, especially if you plan to share this publicly.
+    /// Start reorganizing this and other bits along seperation of concern seams.
+    /// </summary>
     public class SubscriptionClient
     {
         private static readonly Uri SubscriptionWebsocketUri = new Uri("wss://5wx2mgoj95.execute-api.ap-southeast-2.amazonaws.com/dev");
