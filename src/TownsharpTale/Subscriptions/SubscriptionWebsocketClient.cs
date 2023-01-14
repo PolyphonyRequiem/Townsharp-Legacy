@@ -7,21 +7,26 @@ using Websocket.Client;
 
 namespace Townsharp.Subscriptions
 {
-    internal class SubscriptionWebsocketClient : WebsocketClient, IDisposable
+    internal class SubscriptionWebsocketClient : IDisposable
     {
         private static readonly TimeSpan ResponseTimeout = TimeSpan.FromSeconds(30);
-        private MessageIdFactory messageIdFactory = new MessageIdFactory();
+
+        private readonly WebsocketClient client;
         private readonly Func<string> authorizationTokenFactory;
+
+        private MessageIdFactory messageIdFactory = new MessageIdFactory();
 
         private bool disposedValue = false;
 
         public SubscriptionWebsocketClient(
-            Uri url, 
-            Func<string> authorizationTokenFactory)
-            : base(url, () => AuthorizedClientWebsocketFactory(authorizationTokenFactory))
+            Uri url,
+            Func<string> authorizationTokenFactory) 
         {
-            this.ReconnectTimeout = null;
             this.authorizationTokenFactory = authorizationTokenFactory;
+
+            this.client = new WebsocketClient(url, () => AuthorizedClientWebsocketFactory(authorizationTokenFactory));
+            this.client.ReconnectTimeout = null;
+            this.client.StartOrFail();
         }
 
         private static ClientWebSocket AuthorizedClientWebsocketFactory(Func<string> authorizationTokenFactory)
@@ -34,7 +39,7 @@ namespace Townsharp.Subscriptions
 
         // NOTE: inactivity ping is probably needed here.
         public IObservable<SubscriptionEvent> SubscriptionEventReceived =>
-            base.MessageReceived
+            this.client.MessageReceived
                 .Select(AsMaybeSubscriptionResponse)
                 .Where(IsSubscriptionEvent)
                 .Select(response => AsSubscriptionEvent(response.Value))
@@ -50,7 +55,7 @@ namespace Townsharp.Subscriptions
             var id = this.messageIdFactory.GetNext();
             // this should definitely eventually time out!
             var subscriptionRequestResultTask =
-                this.MessageReceived
+                this.client.MessageReceived
                     .Select(AsMaybeSubscriptionResponse)
                     .FirstAsync(result => result.HasValue && result.Value.id == id)
                     .Select(result => result.Value)
@@ -61,7 +66,7 @@ namespace Townsharp.Subscriptions
             var requestMessage = new SubscriptionRequestMessage(id, method, path, this.authorizationTokenFactory.Invoke(), content);
 
             var requestJsonText = Serialize(requestMessage);
-            this.Send(requestJsonText);
+            this.client.Send(requestJsonText);
 
             Result<SubscriptionClientResponse, SubscriptionClientErrorResponse> result;
 
@@ -126,6 +131,25 @@ namespace Townsharp.Subscriptions
 
         private SubscriptionEvent AsSubscriptionEvent(SubscriptionResponseMessage response) =>
             new SubscriptionEvent(response.@event, response.key, response.content);
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (!disposedValue)
+            {
+                if (disposing)
+                {
+                    this.client.Dispose();
+
+                }
+                disposedValue = true;
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(disposing: true);
+            GC.SuppressFinalize(this);
+        }
 
         private class MessageIdFactory
         {

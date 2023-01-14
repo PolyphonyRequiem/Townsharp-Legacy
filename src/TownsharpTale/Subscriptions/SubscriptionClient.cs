@@ -4,7 +4,6 @@ using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
 using System.Runtime.CompilerServices;
-using Websocket.Client;
 using static Townsharp.Api.Json.JsonUtils;
 
 namespace Townsharp.Subscriptions
@@ -13,12 +12,15 @@ namespace Townsharp.Subscriptions
     {
         private static readonly Uri SubscriptionWebsocketUri = new Uri("wss://5wx2mgoj95.execute-api.ap-southeast-2.amazonaws.com/dev");
 
-        private static readonly TimeSpan MigrationFrequency = TimeSpan.FromMinutes(.5);
+        private static readonly TimeSpan MigrationFrequency = TimeSpan.FromMinutes(110);
 
         private readonly Func<string> authTokenFactory;
         private readonly ILogger<SubscriptionClient> logger;
+
+        private readonly IList<IDisposable> subscriptionHandles = new List<IDisposable>();
+
         private SubscriptionWebsocketClient? subscriptionWebsocketClient;
-        private bool initialized = true;
+        private bool connected = true;
         private Task migrating = Task.CompletedTask;
         private Subject<long> startMigration = new Subject<long>();
         private IDisposable migrationTimerSubscription = Disposable.Empty;
@@ -26,8 +28,7 @@ namespace Townsharp.Subscriptions
 
         private readonly Subject<SubscriptionEvent> subscriptionEventSubject = new Subject<SubscriptionEvent>();
 
-        // this is not the right pattern, each call with request a new Observable sequence.
-        public IObservable<SubscriptionEvent> SubscriptionEventReceived => subscriptionEventSubject.AsObservable();
+        public IObservable<SubscriptionEvent> SubscriptionEventReceived => subscriptionEventSubject;
 
         public SubscriptionClient(
             Func<string> authTokenFactory,
@@ -37,9 +38,14 @@ namespace Townsharp.Subscriptions
             this.logger = logger;
         }
 
-        public async Task Run(Action connected, Action faulted)
+        public void Connect(Action connected, Action faulted)
         {
-            this.subscriptionWebsocketClient = await CreateConnectedSubscriptionWebsocketClientAsync(this.authTokenFactory);
+            if (this.connected == true)
+            {
+                throw new InvalidOperationException("Unable to connect, session is already connected.");
+            }
+
+            this.subscriptionWebsocketClient = CreateSubscriptionWebsocketClient(this.authTokenFactory);
             this.SubscribeAllForWebsocket(this.subscriptionWebsocketClient);
             this.onFaulted.Subscribe(_ =>
             {
@@ -49,13 +55,13 @@ namespace Townsharp.Subscriptions
                 faulted();
             });
             this.RegisterForMigration();
-            this.initialized = true;
+            this.connected = true;
             connected();
         }
 
         public async Task<SubscriptionRequestResult> Subscribe(string eventname, string key, CancellationToken cancellationToken = default)
         {
-            this.EnsureInitialized();
+            this.EnsureConnected();
             // These really should be in some way "queued" or managed.
             // Figure out lifecycle and how to model it before figuring out operational details and dataflow.
             await this.migrating;
@@ -68,7 +74,7 @@ namespace Townsharp.Subscriptions
 
         public async Task<SubscriptionRequestResult> Unsubscribe(string eventname, string key, CancellationToken cancellationToken)
         {
-            this.EnsureInitialized();
+            this.EnsureConnected();
             // These really should be in some way "queued" or managed
             // Figure out lifecycle and how to model it before figuring out operational details and dataflow.
             await this.migrating;
@@ -81,10 +87,10 @@ namespace Townsharp.Subscriptions
 
         public void ForceMigration()
         {
-            this.EnsureInitialized();
+            this.EnsureConnected();
             this.startMigration.OnNext(0);
         }
-                
+
         private void RegisterForMigration()
         {
             this.migrationTimerSubscription.Dispose();
@@ -101,7 +107,7 @@ namespace Townsharp.Subscriptions
         {
             // Create a new websocket client
             var oldClient = this.subscriptionWebsocketClient!;
-            var newClient = await CreateConnectedSubscriptionWebsocketClientAsync(this.authTokenFactory);
+            var newClient = CreateSubscriptionWebsocketClient(this.authTokenFactory);
 
             var result = await oldClient.SendRequestAsync(HttpMethod.Get, "migrate");
 
@@ -131,47 +137,39 @@ namespace Townsharp.Subscriptions
             }
             else
             {
+                this.connected = false;
                 this.onFaulted.OnNext(0);
                 throw new SubscriptionClientMigrationException(); // fails the Task, and by extension any awaiting callers.
-            }            
+            }
         }
 
         private void SubscribeAllForWebsocket(SubscriptionWebsocketClient client)
         {
-            client.SubscriptionEventReceived.Subscribe(OnSubscriptionEventReceived);
-            client.MessageReceived.Subscribe(OnMessageReceived);
-            client.DisconnectionHappened.Subscribe(OnDisconnectionHappened);
-        }
 
-        private void OnSubscriptionEventReceived(SubscriptionEvent subscriptionEventReceived)
-        {
-            // Actually we should probably split the stream and republish! How exciting is that :)
-            this.subscriptionEventSubject.OnNext(subscriptionEventReceived);
-        }
+            var newSubscription = client.SubscriptionEventReceived.Subscribe(OnSubscriptionEventReceived);
 
-        private void OnMessageReceived(ResponseMessage responseMessage)
-        {
-
-        }
-
-        private void OnDisconnectionHappened(DisconnectionInfo disconnectionInfo)
-        {
-
-        }
-
-        private void EnsureInitialized([CallerMemberName] string caller = "")
-        {
-            if (!initialized)
+            foreach (var retiredHandle in this.subscriptionHandles)
             {
-                throw new InvalidOperationException($"Unable to call {caller} from  ");
+                retiredHandle.Dispose();
+            }
+
+            this.subscriptionHandles.Add(newSubscription);
+        }
+
+        // Actually we should probably split the stream and republish! How exciting is that :)
+        private void OnSubscriptionEventReceived(SubscriptionEvent subscriptionEventReceived) 
+            => this.subscriptionEventSubject.OnNext(subscriptionEventReceived);
+        
+        private void EnsureConnected([CallerMemberName] string caller = "")
+        {
+            if (!this.connected)
+            {
+                throw new InvalidOperationException($"Unable to call {caller}, not yet connected.  Please call Connect() first.");
             }
         }
-
-        private static async Task<SubscriptionWebsocketClient> CreateConnectedSubscriptionWebsocketClientAsync(Func<string> authTokenFactory)
+        private static SubscriptionWebsocketClient CreateSubscriptionWebsocketClient(Func<string> authTokenFactory)
         {
-            var client = new SubscriptionWebsocketClient(SubscriptionWebsocketUri, () => authTokenFactory.Invoke());
-            await client.Start();
-            return client;
+            return new SubscriptionWebsocketClient(SubscriptionWebsocketUri, () => authTokenFactory.Invoke());
         }
 
         protected record MigrationTokenContent

@@ -26,7 +26,7 @@ internal class SubscriptionClientTest : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var client = new SubscriptionClient(() => this.accountsTokenClient.GetValidToken().Result.AccessToken!, loggerFactory.CreateLogger<SubscriptionClient>());
-        await client.Run(Connected, Faulted);
+        await client.Connect(Connected, Faulted);
 
         client.SubscriptionEventReceived.Subscribe(groupServerStatusChangedEvent => this.logger.LogInformation(groupServerStatusChangedEvent.Content));
 
