@@ -1,15 +1,9 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using Polly;
 using Townsharp.Api;
-using Townsharp.Consoles;
-using Townsharp.Groups;
-using Townsharp.Infra;
-using Townsharp.Infra.Alta.Api;
-using Townsharp.Infra.Alta.Configuration;
-using Townsharp.Infra.Alta.Identity;
-using Townsharp.Infra.Alta.Subscriptions;
+using Townsharp.Api.Identity;
+using Townsharp.Configuration;
 using Townsharp.Infra.Composition;
-using Townsharp.Servers;
 using Townsharp.Subscriptions;
 
 namespace Townsharp.Hosting
@@ -39,16 +33,16 @@ namespace Townsharp.Hosting
                 });
 
             // Consider typed clients with a helper "AddHttpClient" method exposed to library implementers.
-            serviceCollection.AddHttpClient(HttpClientNames.Bot, c => c.BaseAddress = new Uri(ApiClient.BaseAddress))
+            serviceCollection.AddHttpClient(HttpClientNames.Bot, c => c.BaseAddress = new Uri(Api.ApiClient.BaseAddress))
                 .AddPolicyHandler(RetryPolicy)
                 .AddClientCredentialsTokenHandler(TokenManagementNames.AccountsIssuer);
 
             // This is NOT how User Auth works :P
-            serviceCollection.AddHttpClient(HttpClientNames.User, c => c.BaseAddress = new Uri(ApiClient.BaseAddress))
+            serviceCollection.AddHttpClient(HttpClientNames.User, c => c.BaseAddress = new Uri(Api.ApiClient.BaseAddress))
                 .AddPolicyHandler(RetryPolicy)
                 .AddClientCredentialsTokenHandler(TokenManagementNames.AccountsIssuer);
 
-            serviceCollection.AddSingleton<IApiClient, ApiClient>();
+            serviceCollection.AddSingleton<ApiClient>();
             serviceCollection.AddSingleton<AccountsTokenClient>();
             serviceCollection.AddSingleton<SubscriptionClient>();
             serviceCollection.AddSingleton(new AltaClientConfiguration(Environment.GetEnvironmentVariable("TOWNSHARP_TEST_CLIENTID")!));

@@ -1,4 +1,5 @@
 ﻿using CSharpFunctionalExtensions;
+using Microsoft.Extensions.Logging;
 using System.Reactive.Disposables;
 using System.Reactive.Linq;
 using System.Reactive.Subjects;
@@ -15,12 +16,11 @@ namespace Townsharp.Subscriptions
         private static readonly TimeSpan MigrationFrequency = TimeSpan.FromMinutes(.5);
 
         private readonly Func<string> authTokenFactory;
-
+        private readonly ILogger<SubscriptionClient> logger;
         private SubscriptionWebsocketClient? subscriptionWebsocketClient;
         private bool initialized = true;
         private Task migrating = Task.CompletedTask;
         private Subject<long> startMigration = new Subject<long>();
-        
         private IDisposable migrationTimerSubscription = Disposable.Empty;
         private Subject<int> onFaulted = new Subject<int>();
 
@@ -29,9 +29,12 @@ namespace Townsharp.Subscriptions
         // this is not the right pattern, each call with request a new Observable sequence.
         public IObservable<SubscriptionEvent> SubscriptionEventReceived => subscriptionEventSubject.AsObservable();
 
-        public SubscriptionClient(Func<string> authTokenFactory)
+        public SubscriptionClient(
+            Func<string> authTokenFactory,
+            ILogger<SubscriptionClient> logger)
         {
             this.authTokenFactory = authTokenFactory;
+            this.logger = logger;
         }
 
         public async Task Run(Action connected, Action faulted)
@@ -40,6 +43,8 @@ namespace Townsharp.Subscriptions
             this.SubscribeAllForWebsocket(this.subscriptionWebsocketClient);
             this.onFaulted.Subscribe(_ =>
             {
+                // what?  No.  This... Isn't... You can't just... Unless you're expecting them to call run again?  What's the lifecycle.  
+                // We need to test this and you don't get to move on until you write tests mr. man!
                 this.onFaulted = new Subject<int>();
                 faulted();
             });
@@ -94,7 +99,6 @@ namespace Townsharp.Subscriptions
 
         private async Task MigrateWebsocket()
         {
-            
             // Create a new websocket client
             var oldClient = this.subscriptionWebsocketClient!;
             var newClient = await CreateConnectedSubscriptionWebsocketClientAsync(this.authTokenFactory);
@@ -107,11 +111,11 @@ namespace Townsharp.Subscriptions
                     var migrationToken = Deserialize<MigrationTokenContent>(message.Content).Value;
 
                     // okay, let's do this!  new Client is a go.
+                    // need to clean up subscriptions? possible leak?
                     this.SubscribeAllForWebsocket(newClient);
 
                     var result = await newClient.SendRequestAsync(HttpMethod.Post, "migrate", Serialize(migrationToken));
-
-                    return true;
+                    return result.IsSuccess;
                 },
                 error =>
                 {

@@ -63,7 +63,6 @@ namespace Townsharp.Subscriptions
             var requestJsonText = Serialize(requestMessage);
             this.Send(requestJsonText);
 
-
             Result<SubscriptionClientResponse, SubscriptionClientErrorResponse> result;
 
             try

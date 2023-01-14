@@ -1,35 +1,22 @@
-﻿// See https://aka.ms/new-console-template for more information
-using Townsharp.Subscriptions;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
+using Townsharp;
+using Townsharp.Hosting;
 
-Console.WriteLine("Hello, Please give your token");
-var token = Console.ReadLine()!;
+Console.WriteLine("Starting Townsharp SubscriptionClientTests!");
 
-var client = new SubscriptionClient(() => token);
+var builder = Host.CreateDefaultBuilder()
+    .ConfigureServices(ConfigureServices);
 
-await client.Run(Connected, Faulted);
+await builder.RunConsoleAsync();
 
-client.SubscriptionEventReceived.Subscribe(Console.WriteLine);
-
-//Console.WriteLine("Migration in 1 minute");
-//await Task.Delay(60000);
-//client.ForceMigration();
-//Console.WriteLine("Starting Migration");
-
-void Faulted()
+void ConfigureServices(HostBuilderContext context, IServiceCollection services)
 {
-    Console.WriteLine("Faulted!");
-}
-
-void Connected()
-{
-    //var subscriptionRequest = new GroupServerStatusSubscription(new GroupId(1896348181));
-    //client.Subscribe(subscriptionRequest);
-    Task.Run(async () =>
+    services.AddTownsharp(new TownsharpConfig());
+    services.AddHostedService<SubscriptionClientTest>();
+    services.AddLogging(configure =>
     {
-        await client.Subscribe("group-server-status", "1896348181");
-        await client.Subscribe("group-server-status", "1156211297");
+        configure.AddConfiguration(context.Configuration.GetSection("Logging"));
     });
-    
 }
-
-await Task.Delay(1000 * 60 * 60);
