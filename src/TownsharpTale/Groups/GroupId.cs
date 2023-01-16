@@ -1,6 +1,6 @@
 ﻿namespace Townsharp.Groups
 {
-    public record GroupId
+    public record struct GroupId
     {
         private readonly long id;
 

@@ -1,12 +1,10 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Townsharp.Subscriptions
+﻿namespace Townsharp.Subscriptions
 {
     public class SubscriptionService
     {
+        public SubscriptionService() 
+        {
+            
+        }
     }
 }

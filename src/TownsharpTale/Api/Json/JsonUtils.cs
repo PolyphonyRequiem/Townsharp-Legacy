@@ -16,9 +16,9 @@ namespace Townsharp.Api.Json
 
         public static JsonSerializerOptions DefaultSerializerOptions = new JsonSerializerOptions(JsonSerializerDefaults.Web) { PropertyNamingPolicy = new SnakeCaseNamingPolicy() };
 
-        public static Maybe<T> Deserialize<T>(string content)
+        public static Maybe<T> Deserialize<T>(string content, JsonSerializerOptions? jsonSerializerOptions = null)
         {
-            var result = JsonSerializer.Deserialize<T>(content);
+            var result = JsonSerializer.Deserialize<T>(content, jsonSerializerOptions ?? JsonSerializerOptions.Default );
             return result != null ?
                 Maybe.From(result):
                 Maybe.None;

@@ -2,12 +2,11 @@
 using Microsoft.Extensions.Logging;
 using System.Diagnostics;
 using Townsharp;
-using Townsharp.Infra.Alta.Api;
-using Townsharp.Infra.Alta.Subscriptions;
+using Townsharp.Api;
+using Townsharp.Subscriptions;
 
 public class SubscriptionListener : IHostedService
 {
-    private readonly Session session;
     private readonly ILogger<SubscriptionListener> logger;
     private readonly SubscriptionClient subscriptionClient;
     private readonly ApiClient apiClient;
@@ -15,9 +14,8 @@ public class SubscriptionListener : IHostedService
     
     private int total = 0;
 
-    public SubscriptionListener(Session session, ILogger<SubscriptionListener> logger, SubscriptionClient subscriptionClient, ApiClient apiClient)
+    public SubscriptionListener(ILogger<SubscriptionListener> logger, SubscriptionClient subscriptionClient, ApiClient apiClient)
     {
-        this.session = session;
         this.logger = logger;
         this.subscriptionClient = subscriptionClient;
         this.apiClient = apiClient;
@@ -34,30 +32,53 @@ public class SubscriptionListener : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         this.logger.LogInformation($"Subscribing to GroupStatusChanged events");
-        
-        //this.subscriptionClient.GroupStatusChanged.Subscribe(message => this.logger.LogInformation(message.ToString()));
-        this.subscriptionClient.ServerStatusChanged.Subscribe(_ => this.total++);
 
-        await this.subscriptionClient.Connect();
-
-        using (activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
+        this.subscriptionClient.SubscriptionEventReceived.Subscribe(@event =>
         {
-            using (activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
+            this.logger.LogInformation(@event.Content);
+            this.total++;
+        });
+
+        await this.subscriptionClient.Run(OnConnected, OnFaulted);
+
+        async Task OnConnected()
+        {
+            string subscriptionEventKey = "group-server-status";
+            List<Task<SubscriptionRequestResult>> subscriptionTasks = new List<Task<SubscriptionRequestResult>>();
+
+            //await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
+            //{
+            //})
+
+            await foreach (ApiJoinedGroup joinedGroup in this.apiClient.GetJoinedGroups())
             {
-                await foreach (var joinedGroup in this.apiClient.GetJoinedGroupDescriptions())
-                {
-                    await this.subscriptionClient.Subscribe("group-server-status", joinedGroup.Id.ToString());
-                    //await Parallel.ForEachAsync(joinedGroups, new ParallelOptions { MaxDegreeOfParallelism = 10 }, async (g, token) =>
-                    //{
-                        
-                    //})
-                };
+                var groupId = joinedGroup.Group.Id.ToString();
+                this.logger.LogInformation($"Subscribing to '{subscriptionEventKey}' on '{groupId}'");
+                subscriptionTasks.Add(this.subscriptionClient.Subscribe(subscriptionEventKey, groupId));
             }
+
+            Task.WaitAll(subscriptionTasks.ToArray());
         }
+
+        void OnFaulted()
+        {
+            Debugger.Break();
+        }
+
+        //using (activitySource.StartActivity("Listener Startup", ActivityKind.Client)!)
+        //{
+        //    using (activitySource.StartActivity("Subscribing", ActivityKind.Client)!)
+        //    {
+        //        await foreach (var joinedGroup in )
+        //        {
+                    
+                  
+        //        };
+        //    }
+        //}
 
         _ = Task.Run(() => PeriodicUpdate());
         await Task.Delay(-1);
-        //return this.session.Start(cancellationToken);        
     }
 
     public async Task PeriodicUpdate()

@@ -1,4 +1,4 @@
 ﻿namespace Townsharp.Servers
 {
-    public record struct ServerStatus(bool IsOnline, PlayerInfo[] OnlinePlayers);
+    public record ServerStatus(bool IsOnline, PlayerInfo[] OnlinePlayers);
 }

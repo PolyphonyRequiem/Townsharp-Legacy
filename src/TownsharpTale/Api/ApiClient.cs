@@ -120,7 +120,7 @@ namespace Townsharp.Api
             return groupMember!;
         }
 
-        public async IAsyncEnumerable<ApiServer> GetJoinedServersAsync()
+        public async IAsyncEnumerable<ApiServer> GetJoinedServers()
         {
             HttpClient client = getBotHttpClient();
             HttpResponseMessage response;

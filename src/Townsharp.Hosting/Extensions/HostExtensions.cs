@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
 using Polly;
 using Townsharp.Api;
+using Townsharp.Api.Composition;
 using Townsharp.Api.Identity;
 using Townsharp.Configuration;
-using Townsharp.Infra.Composition;
 using Townsharp.Subscriptions;
 
 namespace Townsharp.Hosting
@@ -44,7 +45,13 @@ namespace Townsharp.Hosting
 
             serviceCollection.AddSingleton<ApiClient>();
             serviceCollection.AddSingleton<AccountsTokenClient>();
-            serviceCollection.AddSingleton<SubscriptionClient>();
+            
+            // temporarily adding this but this isn't ideal.
+            serviceCollection.AddSingleton<SubscriptionClient>(
+                provider => new SubscriptionClient(
+                    () => provider.GetRequiredService<AccountsTokenClient>().GetValidToken().Result.AccessToken!,
+                    provider.GetRequiredService<ILogger<SubscriptionClient>>()));
+
             serviceCollection.AddSingleton(new AltaClientConfiguration(Environment.GetEnvironmentVariable("TOWNSHARP_TEST_CLIENTID")!));
             return serviceCollection;
         }

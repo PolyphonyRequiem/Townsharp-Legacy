@@ -2,7 +2,7 @@
 
 namespace Townsharp.Groups
 {
-    public record struct GroupInfo(
+    public record GroupInfo(
         GroupId Id, 
         string Name,
         string Description,

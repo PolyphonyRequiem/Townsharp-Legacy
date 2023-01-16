@@ -3,10 +3,11 @@ using Microsoft.Extensions.Logging;
 using Polly;
 using System.Collections.Concurrent;
 using System.Reactive.Linq;
-using static Townsharp.Infra.Alta.Json.JsonUtils;
+using static Townsharp.Api.Json.JsonUtils;
 using Websocket.Client;
 using Websocket.Client.Models;
 using System.Text.Json;
+using CSharpFunctionalExtensions;
 
 namespace Townsharp.Infra.Alta.Console
 {
@@ -136,9 +137,19 @@ namespace Townsharp.Infra.Alta.Console
                 {
                     try
                     {
-                        ConsoleCommandResultMessage commandResponse = Deserialize<ConsoleCommandResultMessage>(response.Text);
-                        this.logger.LogDebug($"Got command response for id: {id}.{Environment.NewLine}{commandResponse}");
-                        tcs.SetResult(commandResponse);
+                        Maybe<ConsoleCommandResultMessage> maybeCommandResponse = Deserialize<ConsoleCommandResultMessage>(response.Text, DefaultSerializerOptions);
+
+                        maybeCommandResponse.Execute(commandResponse =>
+                        {
+                            this.logger.LogDebug($"Got command response for id: {id}.{Environment.NewLine}{commandResponse}");
+                            tcs.SetResult(commandResponse);
+                        });
+
+                        maybeCommandResponse.ExecuteNoValue(() =>
+                        {
+                            this.logger.LogDebug($"The response for id: {id} was unable to be interpreted.");
+                            tcs.SetException(new InvalidOperationException());
+                        });
                     }
                     catch (Exception exc)
                     {
@@ -161,7 +172,15 @@ namespace Townsharp.Infra.Alta.Console
         {
             try
             {
-                var responseMessage = Deserialize<ConsoleResponseMessage>(response.Text);
+                var maybeResponseMessage = Deserialize<ConsoleResponseMessage>(response.Text);
+
+                if (maybeResponseMessage.HasNoValue)
+                {
+                    return false;
+                }
+
+                var responseMessage = maybeResponseMessage.Value;
+
                 if (responseMessage.Data?.RootElement.ToString().Contains("Connection Succeeded, Authenticated as:") ?? false)
                 {
                     logger.LogInformation($"Successfully authenticated to console for server {this.serverId}. {responseMessage.Data.RootElement.ToString()}");

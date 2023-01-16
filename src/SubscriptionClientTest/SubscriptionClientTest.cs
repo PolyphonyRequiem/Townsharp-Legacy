@@ -26,7 +26,8 @@ internal class SubscriptionClientTest : IHostedService
     public async Task StartAsync(CancellationToken cancellationToken)
     {
         var client = new SubscriptionClient(() => this.accountsTokenClient.GetValidToken().Result.AccessToken!, loggerFactory.CreateLogger<SubscriptionClient>());
-        await client.Connect(Connected, Faulted);
+
+        await client.Run(Connected, Faulted);
 
         client.SubscriptionEventReceived.Subscribe(groupServerStatusChangedEvent => this.logger.LogInformation(groupServerStatusChangedEvent.Content));
 
@@ -35,15 +36,12 @@ internal class SubscriptionClientTest : IHostedService
             this.logger.LogInformation("Faulted!");
         }
 
-        void Connected()
+        async Task Connected()
         {
-            Task.Run(async () =>
+            await foreach (var server in this.apiClient.GetJoinedServers())
             {
-                await foreach (var server in this.apiClient.GetJoinedServersAsync())
-                {
-                    await client.Subscribe("group-server-status", server.GroupId.ToString());
-                }
-            });
+                await client.Subscribe("group-server-status", server.GroupId.ToString());
+            }
         }
     }
 

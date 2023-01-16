@@ -17,6 +17,7 @@ void ConfigureServices(HostBuilderContext context, IServiceCollection services)
 {
     IAsyncPolicy<HttpResponseMessage> RetryPolicy = Policy.Handle<OverflowException>().OrResult<HttpResponseMessage>(r => false).RetryAsync();
     services.AddTownsharp(new TownsharpConfig());
+    services.AddHostedService<SubscriptionListener>();
     services.AddLogging(configure =>
     {
         configure.AddConfiguration(context.Configuration.GetSection("Logging"));

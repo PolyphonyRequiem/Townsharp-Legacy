@@ -1,4 +1,4 @@
 ﻿namespace Townsharp.Servers
 {
-    public record struct PlayerInfo(PlayerId Id, string Username);
+    public record PlayerInfo(PlayerId Id, string Username);
 }
